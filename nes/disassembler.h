@@ -5,6 +5,8 @@
 #ifndef BEMU_DISASSEMBLER_H
 #define BEMU_DISASSEMBLER_H
 
+#include <stdint.h>
+
 #define DISASSEBLER_ERROR (-1)
 
 int disasm(char *prg_rom, int length);

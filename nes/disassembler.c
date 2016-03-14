@@ -4,7 +4,6 @@
 
 #include "disassembler.h"
 #include <stdio.h>
-#include <stdint.h>
 
 /* 根据不同的寻址方式输出不同的内容, 同时设置 pc 的变化量 */
 #define ACCUMULATOR(name)  printf("%s\t A\n", name);                                  pc_delta = 1;
@@ -22,7 +21,13 @@
 #define ZERO_PAGE_Y(name)  printf("%s\t $%02x, Y\n", name, opcode[1]);                pc_delta = 2;
 
 
-
+/* 反汇编, 并通过 printf() 打印
+ * 输入:
+ *     prg_rom: 指向 PRG ROM 首字节的指针
+ *     length:      PRG ROM 的长度
+ * 输出:
+ *     0: 正常返回
+ */
 int disasm(char *prg_rom, int length) {
     int counter = 0;
     if(length <= 0) return DISASSEBLER_ERROR;
@@ -35,6 +40,13 @@ int disasm(char *prg_rom, int length) {
 }
 
 
+/* 对单条指令进行反汇编, 并通过 printf() 打印
+ * 输入:
+ *     prg_rom: 指向 PRG ROM 首字节的指针
+ *     pc:      指令的位置
+ * 输出:
+ *     指令的长度, -1 代表出错
+ */
 int disasm_once(uint8_t *prg_rom, int pc) {
     uint8_t *opcode = &prg_rom[pc];
     int pc_delta = 1;
