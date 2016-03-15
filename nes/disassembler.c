@@ -311,7 +311,5 @@ int disasm_once(uint8_t *prg_rom, int pc) {
         default: printf("op		$%02x", *opcode);
     }
 
-    printf("\n");
-
     return pc_delta;
 }

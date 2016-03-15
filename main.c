@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "nes/disassembler.h"
 
 /**
@@ -38,32 +39,61 @@ int main(int argc, char *argv[]) {
     fp = fopen(argv[1],"r");
     if(fp == NULL) {
         printf("ERROR: File does not exit.\n");
-        return 0;
+        exit(0);
     }
 
     /* 读取 NES ROM 的 Header */
     if(fread(rom.header, sizeof(char), 16, fp) != 16) {
         printf("ERROR: Header read failed.");
-        return 0;
+        exit(0);
     } else {
-        rom.prg_rom_size = 16 * rom.header[4];
-        rom.chr_rom_size = 8 * rom.header[5];
-        rom.prg_ram_size = 8 * rom.header[8];
-        if(rom.chr_rom_size == 0) { rom.chr_rom_size = 8; }
-        if(rom.prg_ram_size == 0) { rom.prg_ram_size = 8; }
+        /* 读取 ROM 信息 */
+        rom.prg_rom_size = 16 * 1024 * rom.header[4];
+        rom.chr_rom_size = 8  * 1024 * rom.header[5];
+        rom.prg_ram_size = 8  * 1024 * rom.header[8];
+        if(rom.chr_rom_size == 0) { rom.chr_rom_size = 8 * 1024; }
+        if(rom.prg_ram_size == 0) { rom.prg_ram_size = 8 * 1024; }
 
+        /* 显示 ROM 信息 */
         printf("ROM Information: =============================\n");
         printf("Type: %c%c%c\n", rom.header[0], rom.header[1], rom.header[2]);
-        printf("PRG ROM Size: %d KB\n", rom.prg_rom_size);
-        printf("CHR ROM Size: %d KB\n", rom.chr_rom_size);
-        printf("PRG RAM Size: %d KB\n", rom.prg_ram_size);
+        printf("PRG ROM Size: %d KB\n", rom.prg_rom_size / 1024);
+        printf("CHR ROM Size: %d KB\n", rom.chr_rom_size / 1024);
+        printf("PRG RAM Size: %d KB\n", rom.prg_ram_size / 1024);
         printf("==============================================\n\n");
     }
+
+    /* 分配内存 */
+    rom.prg_rom = (char *)malloc(rom.prg_rom_size);
+    rom.chr_rom = (char *)malloc(rom.chr_rom_size);
+    if(rom.prg_rom == NULL || rom.chr_rom == NULL) {
+        printf("Memor allocate failed.\n");
+        exit(0);
+    }
+
+    /* 装入 PRG ROM 与 CHR ROM */
+    if(fread(rom.prg_rom, sizeof(char), rom.prg_rom_size, fp) != rom.prg_rom_size) {
+        printf("ERROR: PRG ROM load failed.");
+        exit(0);
+    }
+    if(fread(rom.chr_rom, sizeof(char), rom.chr_rom_size, fp) != rom.chr_rom_size) {
+        printf("ERROR: CHR ROM load failed.");
+        exit(0);
+    }
+
+    /* 反汇编 */
+    disasm(rom.prg_rom, rom.prg_rom_size);
+
+    /* 释放内存 */
+    free(rom.prg_rom);
+    free(rom.chr_rom);
+    rom.prg_rom = NULL;
+    rom.chr_rom = NULL;
 
     /* 关闭 NES ROM */
     fclose(fp);
 
+    printf("Good bye!\n");
 
-    printf("Hello NES!");
     return 0;
 }
