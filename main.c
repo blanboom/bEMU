@@ -23,11 +23,11 @@ struct rom_info {
      *          http://wiki.nesdev.com/w/index.php/INES
      */
     char header[16];
-    int prg_rom_size; // PRG ROM 大小 (KB)
-    int chr_rom_size; // CHR ROM 大小 (KB)
-    int prg_ram_size; // PRG RAM 大小 (KB)
-    char *chr_rom;
+    int prg_rom_size; // PRG ROM 大小 (Byte)
+    int chr_rom_size; // CHR ROM 大小 (Byte)
+    int prg_ram_size; // PRG RAM 大小 (Byte)
     char *prg_rom;
+    char *chr_rom;
 } rom;
 
 int main(int argc, char *argv[]) {
