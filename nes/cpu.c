@@ -3,31 +3,7 @@
 //
 
 #include "cpu.h"
-
-
-/* CPU 寄存器
- * 各个寄存器的名称已经在程序中给出
- * 状态寄存器 p 中各个位的作用:
- *    7  bit  0
- *    ---- ----
- *    NVsB DIZC
- *    |||| ||||
- *    |||| |||+- Carry: 进位标志. 加法有进位或减法**无**借位时置 1
- *    |||| ||+-- Zero: 零标志. 运算结果为 0 时, 该位置 1
- *    |||| |+--- Interrupt: 中断屏蔽标志. 为 0 的时候允许 IRQ 和 NMI, 为 1 的时候只允许 NMI
- *    |||| +---- Decimal:  十进制标志置 1 后, ADC 和 SBC 指令使用十进制表示 (在 NES 中未被使用)
- *    ||++------ B: 用于表示软件中断的状态等, 具体参考此处. http://wiki.nesdev.com/w/index.php/CPU_status_flag_behavior
- *    |+-------- Overflow: 溢出标志. 有溢出时为 1, 无溢出时为 0
- *    +--------- Negative: 负数标志. 无溢出时 1 表示结果为负, 有溢出是 1 表示结果为正
- */
-struct _cpu_registers {
-    uint8_t  a;    // 累加寄存器 Accumulator
-    uint8_t  x;    // 变址寄存器 Index Register X
-    uint8_t  y;    // 变址寄存器 Index Register Y
-    uint8_t  sp;   // 堆栈指针   Stack Pointer
-    uint8_t  p;    // 状态寄存器 Status Register
-    uint16_t pc;   // 程序计数器 Program Counter
-};
+#include "memory.h"
 
 /* CPU 寻址方式
  * http://wiki.nesdev.com/w/index.php/CPU_addressing_modes
@@ -87,3 +63,63 @@ struct _cpu_registers {
  *   缩写: d,y
  *   使用寄存器 Y 的零页寻址. 在零页寻址的基础上, 地址与 Y 中的值相加 (2 字节)
  */
+
+/* 用于获得 CPU 状态寄存器中的指定状态, 具体内容见后面的注释 */
+#define CARRY_FLAG     0x01
+#define ZERO_FLAG      0x02
+#define INTERRUPT_FLAG 0x04
+#define DECIMAL_FLAG   0x08
+#define BREAK_FLAG     0x10
+#define OVERFLOW_FLAG  0x40
+#define SIGN_FLAG      0x80
+
+/* CPU 寄存器
+ * 各个寄存器的名称已经在程序中给出
+ * 状态寄存器 p 中各个位的作用:
+ *    7  bit  0
+ *    ---- ----
+ *    NVsB DIZC
+ *    |||| ||||
+ *    |||| |||+- Carry: 进位标志. 加法有进位或减法**无**借位时置 1
+ *    |||| ||+-- Zero: 零标志. 运算结果为 0 时, 该位置 1
+ *    |||| |+--- Interrupt: 中断屏蔽标志. 为 0 的时候允许 IRQ 和 NMI, 为 1 的时候只允许 NMI
+ *    |||| +---- Decimal:  十进制标志置 1 后, ADC 和 SBC 指令使用十进制表示 (在 NES 中未被使用)
+ *    ||++------ B: 用于表示软件中断的状态等, 具体参考此处. http://wiki.nesdev.com/w/index.php/CPU_status_flag_behavior
+ *    |+-------- Overflow: 溢出标志. 有溢出时为 1, 无溢出时为 0
+ *    +--------- Negative: 负数标志. 无溢出时 1 表示结果为负, 有溢出是 1 表示结果为正
+ */
+struct _cpu {
+    uint8_t  a;    // 累加寄存器 Accumulator
+    uint8_t  x;    // 变址寄存器 Index Register X
+    uint8_t  y;    // 变址寄存器 Index Register Y
+    uint8_t  sp;   // 堆栈指针   Stack Pointer
+    uint8_t  p;    // 状态寄存器 Status Register
+    uint16_t pc;   // 程序计数器 Program Counter
+} cpu;
+
+/* 初始化 CPU */
+void cpu_init() {
+    cpu.a  = 0;
+    cpu.x  = 0;
+    cpu.y  = 0;
+    cpu.p  = 0x34;
+    cpu.sp = 0xfd;
+    cpu.pc = memory_read_word(0xfffc);
+    /* TODO: (APU)
+     * $4017 = $00 (frame irq enabled)
+     * $4015 = $00 (all channels disabled)
+     * $4000-$400F = $00 (not sure about $4010-$4013)
+     * http://wiki.nesdev.com/w/index.php/CPU_power_up_state
+     */
+}
+
+/* CPU 复位 */
+void cpu_reset() {
+    cpu.sp -= 3;
+    cpu.p  |= INTERRUPT_FLAG;
+    cpu.pc = memory_read_word(0xfffc);
+    /* TODO:
+     * APU was silenced ($4015 = 0)
+     */
+}
+
