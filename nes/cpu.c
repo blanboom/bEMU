@@ -5,64 +5,6 @@
 #include "cpu.h"
 #include "memory.h"
 
-/* CPU 寻址方式
- * http://wiki.nesdev.com/w/index.php/CPU_addressing_modes
- * http://ewind.us/2015/nes-emu-5-6502-disassembler/
- * http://nicotine.knight.blog.163.com/blog/static/2692611220089705423961/
- * http://nicotine.knight.blog.163.com/blog/static/26926112200896032919/
- *
- * 寻址方式:
- * - accumulator
- *   缩写: A
- *   累加器寻址. 指令所需操作数在累加器 A 中, 无需操作数 (1 字节)
- *
- * - absolute
- *   缩写: a
- *   直接寻址. 操作数即为内存地址, 低位在前, 高位在后 (3 字节)
- *
- * - absolute, X-indexed
- *   缩写: a,x
- *   使用寄存器 X 的直接变址寻址. 16 位地址做为基地址, 与寄存器 X 的内容相加 (3 字节)
- *
- * - absolute, Y-indexed
- *   缩写: a,y
- *   使用寄存器 Y 的直接变址寻址. 16 位地址做为基地址, 与寄存器 Y 的内容相加 (3 字节)
- *
- * - immediate
- *   缩写: #v
- *   立即数寻址. 后面跟一个 8 位的立即数 (2 字节)
- *
- * - implied
- *   隐含寻址. 与累加器寻址类似, 不过指令所需的操作数不在 A 中, 而在其他寄存器中 (1 字节)
- *
- * - indirect
- *   缩写: (a)
- *   间接寻址. 对应地址内存单元中的数做为地址. (3 字节)
- *
- * - indirect, X-indexed
- *   缩写: (d,x)
- *   先变址 X 后间接寻址. 以 X 做为变址, 与基地址相加, 然后间接寻址 (2 字节)
- *
- * - indirect, Y-indexed
- *   缩写: (d),y
- *   后变址 Y 间接寻址. 对操作数中的零页地址先做一次间接寻址, 得到 16 位地址, 再与 Y 相加, 对相加后得到的地址进行直接寻址. (2 字节)
- *
- * - relative
- *   缩写: label
- *   相对寻址. 用于条件转移指令. 指令第二字节为偏移量, 可正可负. (2 字节)
- *
- * - zeropage
- *   缩写: d
- *   零页寻址. 地址 00 ~ FF 为零页地址 (2 字节)
- *
- * - zeropage, X-indexed
- *   缩写: d,x
- *   使用寄存器 X 的零页寻址. 在零页寻址的基础上, 地址与 X 中的值相加 (2 字节)
- *
- * - zeropage, Y-indexed
- *   缩写: d,y
- *   使用寄存器 Y 的零页寻址. 在零页寻址的基础上, 地址与 Y 中的值相加 (2 字节)
- */
 
 /* 用于获得 CPU 状态寄存器中的指定状态, 具体内容见后面的注释 */
 #define CARRY_FLAG     0x01
