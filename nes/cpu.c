@@ -99,27 +99,27 @@ struct _cpu {
 
 /* 初始化 CPU */
 void cpu_init() {
+    // http://wiki.nesdev.com/w/index.php/CPU_power_up_state
+    uint16_t i;
     cpu.a  = 0;
     cpu.x  = 0;
     cpu.y  = 0;
     cpu.p  = 0x34;
     cpu.sp = 0xfd;
+    memory_write_byte(0x4017, 0); // frame irq enabled
+    memory_write_byte(0x4015, 0); // all channels disabled
+    for(i = 0x4017; i <= 0x400f; i++) {
+        memory_write_byte(i, 0);
+    }
+
     cpu.pc = memory_read_word(0xfffc);
-    /* TODO: (APU)
-     * $4017 = $00 (frame irq enabled)
-     * $4015 = $00 (all channels disabled)
-     * $4000-$400F = $00 (not sure about $4010-$4013)
-     * http://wiki.nesdev.com/w/index.php/CPU_power_up_state
-     */
 }
 
 /* CPU 复位 */
 void cpu_reset() {
     cpu.sp -= 3;
     cpu.p  |= INTERRUPT_FLAG;
+    memory_write_byte(0x4015, 0);  // APU was silenced
     cpu.pc = memory_read_word(0xfffc);
-    /* TODO:
-     * APU was silenced ($4015 = 0)
-     */
 }
 
