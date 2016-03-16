@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
         if(cartridge.prg_ram_size == 0) { cartridge.prg_ram_size = 8 * 1024; }
 
         /* 显示 ROM 信息 */
-        printf("ROM Information: =============================\n");
+        printf("ROM Metadata: =============================\n");
         printf("Sinature: %c%c%c\n", cartridge.header[0], cartridge.header[1], cartridge.header[2]);
         printf("PRG ROM Size: %d KB\n", cartridge.prg_rom_size / 1024);
         printf("CHR ROM Size: %d KB\n", cartridge.chr_rom_size / 1024);

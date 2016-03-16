@@ -28,7 +28,7 @@
  * 输出:
  *     0: 正常返回
  */
-int disasm(char *prg_rom, int length) {
+int disasm(uint8_t *prg_rom, int length) {
     int counter = 0;
     if(length <= 0) return DISASSEBLER_ERROR;
 
