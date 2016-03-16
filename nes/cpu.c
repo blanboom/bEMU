@@ -123,3 +123,158 @@ void cpu_reset() {
     cpu.pc = memory_read_word(0xfffc);
 }
 
+/* 栈操作 */
+void cpu_stack_push_byte(uint8_t data) { memory_write_byte(0x100 + cpu.sp, data); cpu.sp -= 1; }
+void cpu_stack_pushw(uint16_t data)    { memory_write_word(0x0ff + cpu.sp, data); cpu.sp -= 2; }
+uint8_t  cpu_stack_popb()              { cpu.sp += 1; return memory_read_byte(0x100 + cpu.sp); }
+uint16_t cpu_stack_popw()              { cpu.sp += 2; return memory_read_word(0x0ff + cpu.sp); }
+
+
+/* CPU 寻址方式
+ * 参考资料:
+ * http://wiki.nesdev.com/w/index.php/CPU_addressing_modes
+ * http://ewind.us/2015/nes-emu-5-6502-disassembler/
+ * http://nicotine.knight.blog.163.com/blog/static/2692611220089705423961/
+ * http://nicotine.knight.blog.163.com/blog/static/26926112200896032919/
+ *
+ * 程序代码参考了此处:
+ * https://github.com/NJUOS/LiteNES
+ */
+
+
+/* 存储 CPU 经过寻址后得到的地址和该地址对应的值 */
+uint16_t op_address;
+uint8_t  op_value;
+
+/* implied (1 字节)
+ * 隐含寻址. 与累加器寻址类似, 不过指令所需的操作数不在 A 中, 而在其他寄存器中
+ */
+void cpu_addressing_implied() {}
+
+/* accumulator (1 字节)
+ * 缩写: A
+ * 累加器寻址. 指令所需操作数在累加器 A 中, 无需操作数
+ */
+void cpu_addressing_accumulator() {}
+
+/* immediate (2 字节)
+ * 缩写: #v
+ * 立即数寻址. 后面跟一个 8 位的立即数
+ */
+void cpu_addressing_immediate() {
+    op_value = memory_read_byte(cpu.pc);
+    cpu.pc++;
+}
+
+/* zeropage (2 字节)
+ * 缩写: d
+ * 零页寻址. 地址 00 ~ FF 为零页地址
+ */
+void cpu_addressing_zeropage() {
+    op_address = memory_read_byte(cpu.pc);
+    op_value = memory_read_byte[op_address];
+    cpu.pc++;
+}
+
+/* zeropage, X-indexed (2 字节)
+ * 缩写: d,x
+ * 使用寄存器 X 的零页寻址. 在零页寻址的基础上, 地址与 X 中的值相加
+ */
+void cpu_addressing_zeropage_x() {
+    op_address = (memory_read_byte(cpu.pc) + cpu.x) & 0xff;
+    op_value = memory_read_byte(op_address);
+    cpu.pc++;
+}
+
+/* zeropage, Y-indexed (2 字节)
+ * 缩写: d,y
+ * 使用寄存器 Y 的零页寻址. 在零页寻址的基础上, 地址与 Y 中的值相加
+ */
+void cpu_addressing_zeropage_y() {
+    op_address = (memory_read_byte(cpu.pc) + cpu.y) & 0xff;
+    op_value = memory_read_byte(op_address);
+    cpu.pc++;
+}
+
+/* absolute (3 字节)
+ * 缩写: a
+ * 直接寻址. 操作数即为内存地址, 低位在前, 高位在后
+ */
+void cpu_addressing_absolute() {
+    op_address = memory_read_word(cpu.pc);
+    op_value = memory_read_byte(op_address);
+    cpu.pc += 2;
+}
+
+/* absolute, X-indexed (3 字节)
+ * 缩写: a,x
+ * 使用寄存器 X 的直接变址寻址. 16 位地址做为基地址, 与寄存器 X 的内容相加
+ */
+void cpu_addressing_absolute_x() {
+    op_address = memory_read_word(cpu.pc) + cpu.x;
+    op_value = memory_read_byte(op_address);
+    cpu.pc += 2;
+}
+
+/* absolute, Y-indexed (3 字节)
+ * 缩写: a,y
+ * 使用寄存器 Y 的直接变址寻址. 16 位地址做为基地址, 与寄存器 Y 的内容相加
+ */
+void cpu_addressing_absolute_y() {
+    op_address = memory_read_word(cpu.pc) + cpu.y;
+    op_value = memory_read_byte(op_address);
+    cpu.pc += 2;
+}
+
+/* relative (2 字节)
+ * 缩写: label
+ * 相对寻址. 用于条件转移指令. 指令第二字节为偏移量, 可正可负.
+ */
+void cpu_addressing_relative() {
+    op_address = memory_read_byte(cpu.pc);
+    cpu.pc++;
+    if(op_address & 0x80) { op_address -= 0x100; }
+    op_address += cpu.pc;
+}
+
+/* indirect (3 字节)
+ * 缩写: (a)
+ * 间接寻址. 对应地址内存单元中的数做为地址.
+ */
+void cpu_addressing_indirect() {
+    uint16_t arg_addr = memory_read_word(cpu.pc);
+
+    /* 据说这是 6502 的 Bug */
+    if((arg_addr & 0xff) == 0xff) {
+        // 有 Bug 的情况下
+        op_address = (memory_read_byte(arg_addr & 0xff00) << 8) + memory_read_byte(arg_addr);
+    } else {
+        // 正常情况下
+        op_address = memory_read_word(arg_addr);
+    }
+    cpu.pc += 2;
+}
+
+/* indirect, X-indexed (2 字节)
+ * 缩写: (d,x)
+ * 先变址 X 后间接寻址. 以 X 做为变址, 与基地址相加, 然后间接寻址
+ */
+void cpu_addressing_indirect_x() {
+    uint8_t arg_addr = memory_read_byte(cpu.PC);
+    op_address = (memory_read_byte((arg_addr + cpu.x + 1) & 0xff) << 8) | memory_read_byte((arg_addr + cpu.x) & 0xff);
+    op_value = memory_read_byte(op_address);
+    cpu.pc++;
+}
+
+/* indirect, Y-indexed (2 字节)
+ * 缩写: (d),y
+ * 后变址 Y 间接寻址. 对操作数中的零页地址先做一次间接寻址, 得到 16 位地址, 再与 Y 相加, 对相加后得到的地址进行直接寻址.
+ */
+void cpu_addressing_indirect_y() {
+    uint8_t arg_addr = memory_read_byte(cpu.PC);
+    op_address = (((memory_read_byte((arg_addr + 1) & 0xff) << 8) | memory_read_byte(arg_addr)) + cpu.y) & 0xffff;
+    op_value = memory_read_byte(op_address);
+    cpu.PC++;
+}
+
+/* CPU 指令 ************************************************************/
