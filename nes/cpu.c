@@ -13,7 +13,7 @@
 #define DECIMAL_FLAG   0x08
 #define BREAK_FLAG     0x10
 #define OVERFLOW_FLAG  0x40
-#define SIGN_FLAG      0x80
+#define NEGATIVE_FLAG  0x80
 
 /* CPU 寄存器
  * 各个寄存器的名称已经在程序中给出
@@ -63,6 +63,19 @@ void cpu_reset() {
     cpu.p  |= INTERRUPT_FLAG;
     memory_write_byte(0x4015, 0);  // APU was silenced
     cpu.pc = memory_read_word(0xfffc);
+}
+
+/* 检查并设置 Zero Flag 与 Negative Flag */
+void cpu_checknz(uint8_t n)
+{
+    if((n >> 7) & 1) { cpu.p |= NEGATIVE_FLAG; } else { cpu.p &= !NEGATIVE_FLAG; }
+    if(n == 0)       { cpu.p |= ZERO_FLAG; }     else { cpu.p &= !ZERO_FLAG; }
+}
+
+/* 修改 Flags */
+void cpu_modifyflags(uint8_t flag, int value) {
+    if(value) { cpu.p |= flag; }
+    else      { cpu.p &= !flag; }
 }
 
 /* 栈操作 */
