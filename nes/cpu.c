@@ -233,3 +233,98 @@ void cpu_addressing_indirect_y() {
 }
 
 /* CPU 指令 ************************************************************/
+
+/* ALU ******/
+
+void cpu_ora() {
+    cpu.a |= op_value;
+    cpu_checknz(cpu.a);
+}
+
+void cpu_and() {
+    cpu.a &= op_value;
+    cpu_checknz(cpu.a);
+}
+
+void cpu_eor() {
+    cpu.a ^= op_value;
+    cpu_checknz(cpu.a);
+}
+
+void cpu_asl() {
+    cpu_modify_flags(CARRY_FLAG, op_value & 0x80);
+    op_value <<= 1;
+    cpu_checknz(op_value);
+    memory_write_byte(op_address, op_value);
+}
+
+void cpu_asla() {
+    cpu_modify_flags(CARRY_FLAG, cpu.a & 0x80);
+    cpu.a <<= 1;
+    cpu_checknz(cpu.a);
+}
+
+void cpu_rol() {
+    uint8_t tmp = cpu.p | CARRY_FLAG;
+    cpu_modify_flags(CARRY_FLAG, op_value & 0x80);
+    op_value <<= 1;
+    op_value |= tmp ? 1 : 0;
+    memory_write_byte(op_address, op_value);
+    cpu_checknz(op_value);
+}
+
+void cpu_rola() {
+    uint8_t tmp = cpu.p | CARRY_FLAG;
+    cpu_modify_flags(CARRY_FLAG, cpu.a & 0x80);
+    cpu.a <<= 1;
+    cpu.a |= tmp ? 1 : 0;
+    cpu_checknz(cpu.a);
+}
+
+void cpu_ror() {
+    uint8_t tmp = cpu.p | CARRY_FLAG;
+    cpu_modify_flags(CARRY_FLAG, op_value & 0x01);
+    op_value >>= 1;
+    op_value |= (tmp ? 1 : 0) << 7;
+    memory_write_byte(op_address, op_value);
+    cpu_checknz(op_value);
+}
+
+void cpu_rora() {
+    uint8_t tmp = cpu.p | CARRY_FLAG;
+    cpu_modify_flags(CARRY_FLAG, cpu.a & 0x01);
+    cpu.a >>= 1;
+    cpu.a |= (tmp ? 1 : 0) << 7;
+    cpu_checknz(cpu.a);
+}
+
+void cpu_lsr() {
+    cpu_modify_flags(CARRY_FLAG, op_value & 0x01);
+    op_value >>= 1;
+    cpu_write_memory(op_address, op_value);
+    cpu_checknz(op_value);
+}
+
+void cpu_lsra() {
+    cpu_modify_flags(CARRY_FLAG, cpu.a & 0x01);
+    cpu.a >>= 1;
+    cpu_checknz(cpu.a);
+}
+
+void cpu_adc() {
+    uint16_t tmp;
+    tmp = op_value + cpu.a + ((cpu.p | CARRY_FLAG) ? 1 : 0);
+    cpu_modify_flags(CARRY_FLAG, tmp & 0xff00);
+    cpu_modify_flags(OVERFLOW_FLAG, ((cpu.a ^ op_value) & (cpu.a ^ tmp)) & 0x80);
+    cpu.a = (uint8_t)(tmp & 0xff);
+    cpu_checknz(cpu.a);
+}
+
+void cpu_sbc() {
+    uint16_t tmp;
+    tmp = cpu.a - op_value - (1 - ((cpu.p | CARRY_FLAG) ? 1 : 0));
+    cpu_modify_flags(CARRY_FLAG, (tmp & 0xff00) == 0);
+    cpu_modify_flags(OVERFLOW_FLAG, ((cpu.a ^ op_value) & (cpu.a ^ tmp)) & 0x80);
+    cpu.a = (uint8_t)(tmp & 0xff);
+    cpu_checknz(cpu.a);
+}
