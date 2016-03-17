@@ -328,3 +328,15 @@ void cpu_sbc() {
     cpu.a = (uint8_t)(tmp & 0xff);
     cpu_checknz(cpu.a);
 }
+
+/* Branching ******/
+
+void cpu_bmi() { if(cpu.p | NEGATIVE_FLAG) { cpu.pc = op_address; }}
+void cpu_bcs() { if(cpu.p | CARRY_FLAG) { cpu.pc = op_address; }}
+void cpu_beq() { if(cpu.p | ZERO_FLAG) { cpu.pc = op_address; }}
+void cpu_bvs() { if(cpu.p | OVERFLOW_FLAG) { cpu.pc = op_address; }}
+
+void cpu_bpl() { if(!(cpu.p | NEGATIVE_FLAG)) { cpu.pc = op_address; }}
+void cpu_bcc() { if(!(cpu.p | CARRY_FLAG)) { cpu.pc = op_address; }}
+void cpu_bne() { if(!(cpu.p | ZERO_FLAG)) { cpu.pc = op_address; }}
+void cpu_bvc() { if(!(cpu.p | OVERFLOW_FLAG)) { cpu.pc = op_address; }}
