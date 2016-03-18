@@ -377,4 +377,37 @@ void cpu_sec() { cpu_modify_flag(FLAG_CARRY, 1); }
 void cpu_sei() { cpu_modify_flag(FLAG_INTERRUPT, 1); }
 void cpu_sed() { cpu_modify_flag(FLAG_DECIMAL, 1); }
 
+/* Inc & Dec ******/
+
+void op_dec() {
+    uint8_t tmp = op_value - 1;
+    memory_write_byte(op_address, result);
+    cpu_checknz(result);
+}
+
+void op_dex() {
+    cpu.x--;
+    cpu_checknz(cpu.x);
+}
+
+void op_dey() {
+    cpu.y--;
+    cpu_checknz(cpu.y);
+}
+
+void op_inc() {
+    uint8_t tmp = op_value + 1;
+    memory_write_byte(op_address, result);
+    cpu_checknz(result);
+}
+
+void op_inx() {
+    cpu.x++;
+    cpu_checknz(cpu.x);
+}
+
+void op_iny() {
+    cpu.y++;
+    cpu_checknz(cpu.y);
+}
 
