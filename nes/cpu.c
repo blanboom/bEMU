@@ -7,13 +7,13 @@
 
 
 /* 用于获得 CPU 状态寄存器中的指定状态, 具体内容见后面的注释 */
-#define CARRY_FLAG     0x01
-#define ZERO_FLAG      0x02
-#define INTERRUPT_FLAG 0x04
-#define DECIMAL_FLAG   0x08
-#define BREAK_FLAG     0x10
-#define OVERFLOW_FLAG  0x40
-#define NEGATIVE_FLAG  0x80
+#define FLAG_CARRY     0x01
+#define FLAG_ZERO      0x02
+#define FLAG_INTERRUPT 0x04
+#define FLAG_DECIMAL   0x08
+#define FLAG_BREAK     0x10
+#define FLAG_OVERFLOW  0x40
+#define FLAG_NEGATIVE  0x80
 
 /* CPU 寄存器
  * 各个寄存器的名称已经在程序中给出
@@ -60,7 +60,7 @@ void cpu_init() {
 /* CPU 复位 */
 void cpu_reset() {
     cpu.sp -= 3;
-    cpu.p  |= INTERRUPT_FLAG;
+    cpu.p  |= FLAG_INTERRUPT;
     memory_write_byte(0x4015, 0);  // APU was silenced
     cpu.pc = memory_read_word(0xfffc);
 }
@@ -68,12 +68,12 @@ void cpu_reset() {
 /* 检查并设置 Zero Flag 与 Negative Flag */
 void cpu_checknz(uint8_t n)
 {
-    if((n >> 7) & 1) { cpu.p |= NEGATIVE_FLAG; } else { cpu.p &= !NEGATIVE_FLAG; }
-    if(n == 0)       { cpu.p |= ZERO_FLAG; }     else { cpu.p &= !ZERO_FLAG; }
+    if((n >> 7) & 1) { cpu.p |= FLAG_NEGATIVE; } else { cpu.p &= !FLAG_NEGATIVE; }
+    if(n == 0)       { cpu.p |= FLAG_ZERO; }     else { cpu.p &= !FLAG_ZERO; }
 }
 
 /* 修改 Flags */
-void cpu_modifyflags(uint8_t flag, int value) {
+void cpu_modify_flag(uint8_t flag, int value) {
     if(value) { cpu.p |= flag; }
     else      { cpu.p &= !flag; }
 }
@@ -252,21 +252,21 @@ void cpu_eor() {
 }
 
 void cpu_asl() {
-    cpu_modify_flags(CARRY_FLAG, op_value & 0x80);
+    cpu_modify_flag(FLAG_CARRY, op_value & 0x80);
     op_value <<= 1;
     cpu_checknz(op_value);
     memory_write_byte(op_address, op_value);
 }
 
 void cpu_asla() {
-    cpu_modify_flags(CARRY_FLAG, cpu.a & 0x80);
+    cpu_modify_flag(FLAG_CARRY, cpu.a & 0x80);
     cpu.a <<= 1;
     cpu_checknz(cpu.a);
 }
 
 void cpu_rol() {
-    uint8_t tmp = cpu.p | CARRY_FLAG;
-    cpu_modify_flags(CARRY_FLAG, op_value & 0x80);
+    uint8_t tmp = cpu.p | FLAG_CARRY;
+    cpu_modify_flag(FLAG_CARRY, op_value & 0x80);
     op_value <<= 1;
     op_value |= tmp ? 1 : 0;
     memory_write_byte(op_address, op_value);
@@ -274,16 +274,16 @@ void cpu_rol() {
 }
 
 void cpu_rola() {
-    uint8_t tmp = cpu.p | CARRY_FLAG;
-    cpu_modify_flags(CARRY_FLAG, cpu.a & 0x80);
+    uint8_t tmp = cpu.p | FLAG_CARRY;
+    cpu_modify_flag(FLAG_CARRY, cpu.a & 0x80);
     cpu.a <<= 1;
     cpu.a |= tmp ? 1 : 0;
     cpu_checknz(cpu.a);
 }
 
 void cpu_ror() {
-    uint8_t tmp = cpu.p | CARRY_FLAG;
-    cpu_modify_flags(CARRY_FLAG, op_value & 0x01);
+    uint8_t tmp = cpu.p | FLAG_CARRY;
+    cpu_modify_flag(FLAG_CARRY, op_value & 0x01);
     op_value >>= 1;
     op_value |= (tmp ? 1 : 0) << 7;
     memory_write_byte(op_address, op_value);
@@ -291,80 +291,92 @@ void cpu_ror() {
 }
 
 void cpu_rora() {
-    uint8_t tmp = cpu.p | CARRY_FLAG;
-    cpu_modify_flags(CARRY_FLAG, cpu.a & 0x01);
+    uint8_t tmp = cpu.p | FLAG_CARRY;
+    cpu_modify_flag(FLAG_CARRY, cpu.a & 0x01);
     cpu.a >>= 1;
     cpu.a |= (tmp ? 1 : 0) << 7;
     cpu_checknz(cpu.a);
 }
 
 void cpu_lsr() {
-    cpu_modify_flags(CARRY_FLAG, op_value & 0x01);
+    cpu_modify_flag(FLAG_CARRY, op_value & 0x01);
     op_value >>= 1;
     cpu_write_memory(op_address, op_value);
     cpu_checknz(op_value);
 }
 
 void cpu_lsra() {
-    cpu_modify_flags(CARRY_FLAG, cpu.a & 0x01);
+    cpu_modify_flag(FLAG_CARRY, cpu.a & 0x01);
     cpu.a >>= 1;
     cpu_checknz(cpu.a);
 }
 
 void cpu_adc() {
     uint16_t tmp;
-    tmp = op_value + cpu.a + ((cpu.p | CARRY_FLAG) ? 1 : 0);
-    cpu_modify_flags(CARRY_FLAG, tmp & 0xff00);
-    cpu_modify_flags(OVERFLOW_FLAG, ((cpu.a ^ op_value) & (cpu.a ^ tmp)) & 0x80);
+    tmp = op_value + cpu.a + ((cpu.p | FLAG_CARRY) ? 1 : 0);
+    cpu_modify_flag(FLAG_CARRY, tmp & 0xff00);
+    cpu_modify_flag(FLAG_OVERFLOW, ((cpu.a ^ op_value) & (cpu.a ^ tmp)) & 0x80);
     cpu.a = (uint8_t)(tmp & 0xff);
     cpu_checknz(cpu.a);
 }
 
 void cpu_sbc() {
     uint16_t tmp;
-    tmp = cpu.a - op_value - (1 - ((cpu.p | CARRY_FLAG) ? 1 : 0));
-    cpu_modify_flags(CARRY_FLAG, (tmp & 0xff00) == 0);
-    cpu_modify_flags(OVERFLOW_FLAG, ((cpu.a ^ op_value) & (cpu.a ^ tmp)) & 0x80);
+    tmp = cpu.a - op_value - (1 - ((cpu.p | FLAG_CARRY) ? 1 : 0));
+    cpu_modify_flag(FLAG_CARRY, (tmp & 0xff00) == 0);
+    cpu_modify_flag(FLAG_OVERFLOW, ((cpu.a ^ op_value) & (cpu.a ^ tmp)) & 0x80);
     cpu.a = (uint8_t)(tmp & 0xff);
     cpu_checknz(cpu.a);
 }
 
 /* Branching ******/
 
-void cpu_bmi() { if(cpu.p | NEGATIVE_FLAG) { cpu.pc = op_address; }}
-void cpu_bcs() { if(cpu.p | CARRY_FLAG) { cpu.pc = op_address; }}
-void cpu_beq() { if(cpu.p | ZERO_FLAG) { cpu.pc = op_address; }}
-void cpu_bvs() { if(cpu.p | OVERFLOW_FLAG) { cpu.pc = op_address; }}
+void cpu_bmi() { if(cpu.p | FLAG_NEGATIVE) { cpu.pc = op_address; }}
+void cpu_bcs() { if(cpu.p | FLAG_CARRY) { cpu.pc = op_address; }}
+void cpu_beq() { if(cpu.p | FLAG_ZERO) { cpu.pc = op_address; }}
+void cpu_bvs() { if(cpu.p | FLAG_OVERFLOW) { cpu.pc = op_address; }}
 
-void cpu_bpl() { if(!(cpu.p | NEGATIVE_FLAG)) { cpu.pc = op_address; }}
-void cpu_bcc() { if(!(cpu.p | CARRY_FLAG)) { cpu.pc = op_address; }}
-void cpu_bne() { if(!(cpu.p | ZERO_FLAG)) { cpu.pc = op_address; }}
-void cpu_bvc() { if(!(cpu.p | OVERFLOW_FLAG)) { cpu.pc = op_address; }}
+void cpu_bpl() { if(!(cpu.p | FLAG_NEGATIVE)) { cpu.pc = op_address; }}
+void cpu_bcc() { if(!(cpu.p | FLAG_CARRY)) { cpu.pc = op_address; }}
+void cpu_bne() { if(!(cpu.p | FLAG_ZERO)) { cpu.pc = op_address; }}
+void cpu_bvc() { if(!(cpu.p | FLAG_OVERFLOW)) { cpu.pc = op_address; }}
 
 /* Comapre ******/
 
 int tmpc;
 
 void cpu_bit() {
-    cpu_modify_flags(OVERFLOW_FLAG, op_value & 0x40);
-    cpu_modify_flags(NEGATIVE_FLAG, op_value & 0x80);
-    cpu_modify_flags(ZERO_FLAG, op_value & cpu.a);
+    cpu_modify_flag(FLAG_OVERFLOW, op_value & 0x40);
+    cpu_modify_flag(FLAG_NEGATIVE, op_value & 0x80);
+    cpu_modify_flag(FLAG_ZERO, op_value & cpu.a);
 }
 
 void cpu_cmp() {
     tmpc = cpu.a - op_value;
-    cpu_modify_flags(CARRY_FLAG, tmp >= 0);
+    cpu_modify_flag(FLAG_CARRY, tmp >= 0);
     cpu_checknz((uint8_t)tmpc);
 }
 
 void cpu_cpx() {
     tmpc = cpu.x - op_value;
-    cpu_modify_flags(CARRY_FLAG, tmp >= 0);
+    cpu_modify_flag(FLAG_CARRY, tmp >= 0);
     cpu_checknz((uint8_t)tmpc);
 }
 
 void cpu_cpy() {
     tmpc = cpu.x - op_value;
-    cpu_modify_flags(CARRY_FLAG, tmp >= 0);
+    cpu_modify_flag(FLAG_CARRY, tmp >= 0);
     cpu_checknz((uint8_t)tmpc);
 }
+
+/* Flag ******/
+
+void cpu_clc() { cpu_modify_flag(FLAG_CARRY, 0); }
+void cpu_cli() { cpu_modify_flag(FLAG_INTERRUPT, 0); }
+void cpu_cld() { cpu_modify_flag(FLAG_DECIMAL, 0); }
+void cpu_clv() { cpu_modify_flag(FLAG_OVERFLOW, 0); }
+void cpu_sec() { cpu_modify_flag(FLAG_CARRY, 1); }
+void cpu_sei() { cpu_modify_flag(FLAG_INTERRUPT, 1); }
+void cpu_sed() { cpu_modify_flag(FLAG_DECIMAL, 1); }
+
+
