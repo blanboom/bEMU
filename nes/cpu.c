@@ -343,8 +343,6 @@ void cpu_bvc() { if(!(cpu.p | FLAG_OVERFLOW)) { cpu.pc = op_address; }}
 
 /* Comapre ******/
 
-int tmpc;
-
 void cpu_bit() {
     cpu_modify_flag(FLAG_OVERFLOW, op_value & 0x40);
     cpu_modify_flag(FLAG_NEGATIVE, op_value & 0x80);
@@ -352,19 +350,19 @@ void cpu_bit() {
 }
 
 void cpu_cmp() {
-    tmpc = cpu.a - op_value;
+    int tmpc = cpu.a - op_value;
     cpu_modify_flag(FLAG_CARRY, tmp >= 0);
     cpu_checknz((uint8_t)tmpc);
 }
 
 void cpu_cpx() {
-    tmpc = cpu.x - op_value;
+    int tmpc = cpu.x - op_value;
     cpu_modify_flag(FLAG_CARRY, tmp >= 0);
     cpu_checknz((uint8_t)tmpc);
 }
 
 void cpu_cpy() {
-    tmpc = cpu.x - op_value;
+    int tmpc = cpu.x - op_value;
     cpu_modify_flag(FLAG_CARRY, tmp >= 0);
     cpu_checknz((uint8_t)tmpc);
 }
