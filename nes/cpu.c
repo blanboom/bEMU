@@ -441,3 +441,12 @@ void cpu_brk() {
     cpu.p |= FLAG_UNISED | FLAG_BREAK;
     cpu.pc = memory_read_address(0xfffa); // NMI 中断
 }
+
+/* Transfer ******/
+
+void cpu_tax() { cpu.x = cpu.a; cpu_checknz(cpu.x); }
+void cpu_tay() { cpu.y = cpu.a; cpu_checknz(cpu.y); }
+void cpu_txa() { cpu.a = cpu.x; cpu_checknz(cpu.a); }
+void cpu_tya() { cpu.a = cpu.y; cpu_checknz(cpu.a); }
+void cpu_tsx() { cpu.x = cpu.sp; cpu_checknz(cpu.x); }
+void cpu_txs() { cpu.sp = cpu.x; }
