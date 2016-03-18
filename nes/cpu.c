@@ -379,35 +379,45 @@ void cpu_sed() { cpu_modify_flag(FLAG_DECIMAL, 1); }
 
 /* Inc & Dec ******/
 
-void op_dec() {
+void cpu_dec() {
     uint8_t tmp = op_value - 1;
     memory_write_byte(op_address, result);
     cpu_checknz(result);
 }
 
-void op_dex() {
+void cpu_dex() {
     cpu.x--;
     cpu_checknz(cpu.x);
 }
 
-void op_dey() {
+void cpu_dey() {
     cpu.y--;
     cpu_checknz(cpu.y);
 }
 
-void op_inc() {
+void cpu_inc() {
     uint8_t tmp = op_value + 1;
     memory_write_byte(op_address, result);
     cpu_checknz(result);
 }
 
-void op_inx() {
+void cpu_inx() {
     cpu.x++;
     cpu_checknz(cpu.x);
 }
 
-void op_iny() {
+void cpu_iny() {
     cpu.y++;
     cpu_checknz(cpu.y);
 }
+
+/* Load & Store ******/
+
+void cpu_lda() { cpu.a = op_value; cpu_checknz(cpu.a); }
+void cpu_ldx() { cpu.x = op_value; cpu_checknz(cpu.x); }
+void cpu_ldy() { cpu.y = op_value; cpu_checknz(cpu.y); }
+void cpu_sta() { memory_write_byte(op_address, cpu.a); }
+void cpu_stx() { memory_write_byte(op_address, cpu.x); }
+void cpu_sty() { memory_write_byte(op_address, cpu.y); }
+
 
