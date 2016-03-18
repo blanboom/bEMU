@@ -340,3 +340,31 @@ void cpu_bpl() { if(!(cpu.p | NEGATIVE_FLAG)) { cpu.pc = op_address; }}
 void cpu_bcc() { if(!(cpu.p | CARRY_FLAG)) { cpu.pc = op_address; }}
 void cpu_bne() { if(!(cpu.p | ZERO_FLAG)) { cpu.pc = op_address; }}
 void cpu_bvc() { if(!(cpu.p | OVERFLOW_FLAG)) { cpu.pc = op_address; }}
+
+/* Comapre ******/
+
+int tmpc;
+
+void cpu_bit() {
+    cpu_modify_flags(OVERFLOW_FLAG, op_value & 0x40);
+    cpu_modify_flags(NEGATIVE_FLAG, op_value & 0x80);
+    cpu_modify_flags(ZERO_FLAG, op_value & cpu.a);
+}
+
+void cpu_cmp() {
+    tmpc = cpu.a - op_value;
+    cpu_modify_flags(CARRY_FLAG, tmp >= 0);
+    cpu_checknz((uint8_t)tmpc);
+}
+
+void cpu_cpx() {
+    tmpc = cpu.x - op_value;
+    cpu_modify_flags(CARRY_FLAG, tmp >= 0);
+    cpu_checknz((uint8_t)tmpc);
+}
+
+void cpu_cpy() {
+    tmpc = cpu.x - op_value;
+    cpu_modify_flags(CARRY_FLAG, tmp >= 0);
+    cpu_checknz((uint8_t)tmpc);
+}
