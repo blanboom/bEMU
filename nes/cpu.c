@@ -12,6 +12,7 @@
 #define FLAG_INTERRUPT 0x04
 #define FLAG_DECIMAL   0x08
 #define FLAG_BREAK     0x10
+#define FLAG_UNUSED    0x20
 #define FLAG_OVERFLOW  0x40
 #define FLAG_NEGATIVE  0x80
 
@@ -80,9 +81,9 @@ void cpu_modify_flag(uint8_t flag, int value) {
 
 /* 栈操作 */
 void cpu_stack_push_byte(uint8_t data) { memory_write_byte(0x100 + cpu.sp, data); cpu.sp -= 1; }
-void cpu_stack_pushw(uint16_t data)    { memory_write_word(0x0ff + cpu.sp, data); cpu.sp -= 2; }
-uint8_t  cpu_stack_popb()              { cpu.sp += 1; return memory_read_byte(0x100 + cpu.sp); }
-uint16_t cpu_stack_popw()              { cpu.sp += 2; return memory_read_word(0x0ff + cpu.sp); }
+void cpu_stack_push_word(uint16_t data)    { memory_write_word(0x0ff + cpu.sp, data); cpu.sp -= 2; }
+uint8_t  cpu_stack_pop_byte()              { cpu.sp += 1; return memory_read_byte(0x100 + cpu.sp); }
+uint16_t cpu_stack_pop_word()              { cpu.sp += 2; return memory_read_word(0x0ff + cpu.sp); }
 
 
 /* CPU 寻址方式
@@ -424,3 +425,19 @@ void cpu_sty() { memory_write_byte(op_address, cpu.y); }
 
 void cpu_nop {}
 
+/* Stack & Jump ******/
+
+void cpu_pha() { cpu_stack_push_byte(cpu.a); }
+void cpu_php() { cpu_stack_push_byte(cpu.p | 0x30); }
+void cpu_pla() { cpu.a = cpu_stack_pop_byte(); cpu_checknz(cpu.a); }
+void cpu_plp() { cpu.p = (cpu_stack_pop_byte() & 0xef) | 0x20; }
+void cpu_rts() { cpu.pc = cpu_stack_pop_word() + 1; }
+void cpu_rti() { cpu.p = cpu_stack_pop_byte() | FLAG_UNUSED; cpu.pc = cpu_stack_pop_word(); }
+void cpu_jmp() { cpu.pc = op_address; }
+void cpu_jsr() { cpu_stack_push_word(cpu.pc - 1); cpu.pc = op_address; }
+void cpu_brk() {
+    cpu_stack_push_word(cpu.pc - 1);
+    cpu_stack_push_byte(cpu.p);
+    cpu.p |= FLAG_UNISED | FLAG_BREAK;
+    cpu.pc = memory_read_address(0xfffa); // NMI 中断
+}
