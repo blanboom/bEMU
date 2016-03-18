@@ -450,3 +450,18 @@ void cpu_txa() { cpu.a = cpu.x; cpu_checknz(cpu.a); }
 void cpu_tya() { cpu.a = cpu.y; cpu_checknz(cpu.a); }
 void cpu_tsx() { cpu.x = cpu.sp; cpu_checknz(cpu.x); }
 void cpu_txs() { cpu.sp = cpu.x; }
+
+/* Undocumented ******/
+
+/****
+ * TODO: 尚未实现
+ * void cpu_lax() {
+ *     cpu.a = op_value;
+ *     cpu.x = op_value;
+ *     cpu_checknz(cpu.a);
+ * }
+ *
+ * void cpu_sax() {
+ *    memory_write_byte(op_address, cpu.a & cpu.x);
+}
+*****/
