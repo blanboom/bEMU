@@ -420,4 +420,7 @@ void cpu_sta() { memory_write_byte(op_address, cpu.a); }
 void cpu_stx() { memory_write_byte(op_address, cpu.x); }
 void cpu_sty() { memory_write_byte(op_address, cpu.y); }
 
+/* Misc ******/
+
+void cpu_nop {}
 
