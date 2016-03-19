@@ -101,17 +101,18 @@ uint16_t cpu_stack_pop_word()              { cpu.sp += 2; return memory_read_wor
 /* 存储 CPU 经过寻址后得到的地址和该地址对应的值 */
 uint16_t op_address;
 uint8_t  op_value;
+uint8_t additional_cycle;  // 对于某些寻址方式, 如果跨页访问, 需要多使用一个 CPU Cycle
 
 /* implied (1 字节)
  * 隐含寻址. 与累加器寻址类似, 不过指令所需的操作数不在 A 中, 而在其他寄存器中
  */
-void cpu_addressing_implied() {}
+void cpu_addressing_implied() { additional_cycle = 0; }
 
 /* accumulator (1 字节)
  * 缩写: A
  * 累加器寻址. 指令所需操作数在累加器 A 中, 无需操作数
  */
-void cpu_addressing_accumulator() {}
+void cpu_addressing_accumulator() { additional_cycle = 0; }
 
 /* immediate (2 字节)
  * 缩写: #v
@@ -120,6 +121,7 @@ void cpu_addressing_accumulator() {}
 void cpu_addressing_immediate() {
     op_value = memory_read_byte(cpu.pc);
     cpu.pc++;
+    additional_cycle = 0;
 }
 
 /* zeropage (2 字节)
@@ -130,6 +132,7 @@ void cpu_addressing_zeropage() {
     op_address = memory_read_byte(cpu.pc);
     op_value = memory_read_byte[op_address];
     cpu.pc++;
+    additional_cycle = 0;
 }
 
 /* zeropage, X-indexed (2 字节)
@@ -140,6 +143,7 @@ void cpu_addressing_zeropage_x() {
     op_address = (memory_read_byte(cpu.pc) + cpu.x) & 0xff;
     op_value = memory_read_byte(op_address);
     cpu.pc++;
+    additional_cycle = 0;
 }
 
 /* zeropage, Y-indexed (2 字节)
@@ -150,6 +154,7 @@ void cpu_addressing_zeropage_y() {
     op_address = (memory_read_byte(cpu.pc) + cpu.y) & 0xff;
     op_value = memory_read_byte(op_address);
     cpu.pc++;
+    additional_cycle = 0;
 }
 
 /* absolute (3 字节)
@@ -160,6 +165,7 @@ void cpu_addressing_absolute() {
     op_address = memory_read_word(cpu.pc);
     op_value = memory_read_byte(op_address);
     cpu.pc += 2;
+    additional_cycle = 0;
 }
 
 /* absolute, X-indexed (3 字节)
@@ -170,6 +176,11 @@ void cpu_addressing_absolute_x() {
     op_address = memory_read_word(cpu.pc) + cpu.x;
     op_value = memory_read_byte(op_address);
     cpu.pc += 2;
+    if ((op_address >> 8) != (cpu.PC >> 8)) {
+        additional_cycle = 1;
+    } else {
+        additional_cycle = 0;
+    }
 }
 
 /* absolute, Y-indexed (3 字节)
@@ -180,6 +191,11 @@ void cpu_addressing_absolute_y() {
     op_address = memory_read_word(cpu.pc) + cpu.y;
     op_value = memory_read_byte(op_address);
     cpu.pc += 2;
+    if ((op_address >> 8) != (cpu.PC >> 8)) {
+        additional_cycle = 1;
+    } else {
+        additional_cycle = 0;
+    }
 }
 
 /* relative (2 字节)
@@ -191,6 +207,11 @@ void cpu_addressing_relative() {
     cpu.pc++;
     if(op_address & 0x80) { op_address -= 0x100; }
     op_address += cpu.pc;
+    if ((op_address >> 8) != (cpu.PC >> 8)) {
+        additional_cycle = 1;
+    } else {
+        additional_cycle = 0;
+    }
 }
 
 /* indirect (3 字节)
@@ -209,6 +230,7 @@ void cpu_addressing_indirect() {
         op_address = memory_read_word(arg_addr);
     }
     cpu.pc += 2;
+    additional_cycle = 0;
 }
 
 /* indirect, X-indexed (2 字节)
@@ -220,6 +242,7 @@ void cpu_addressing_indirect_x() {
     op_address = (memory_read_byte((arg_addr + cpu.x + 1) & 0xff) << 8) | memory_read_byte((arg_addr + cpu.x) & 0xff);
     op_value = memory_read_byte(op_address);
     cpu.pc++;
+    additional_cycle = 0;
 }
 
 /* indirect, Y-indexed (2 字节)
@@ -231,6 +254,11 @@ void cpu_addressing_indirect_y() {
     op_address = (((memory_read_byte((arg_addr + 1) & 0xff) << 8) | memory_read_byte(arg_addr)) + cpu.y) & 0xffff;
     op_value = memory_read_byte(op_address);
     cpu.PC++;
+    if ((op_address >> 8) != (cpu.PC >> 8)) {
+        additional_cycle = 1;
+    } else {
+        additional_cycle = 0;
+    }
 }
 
 /* CPU 指令 ************************************************************/
