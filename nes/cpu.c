@@ -769,3 +769,10 @@ void cpu_run(int cycles) {
         cycles -= additional_cycles;
     }
 }
+
+void cpu_interrupt() {
+    cpu.p |= FLAG_INTERRUPT;
+    cpu_push_word(cpu.pc);
+    cpu_push_byte(cpu.p);
+    cpu.pc = 0xfffa;
+}
