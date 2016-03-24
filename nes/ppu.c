@@ -4,6 +4,10 @@
 
 #include "ppu.h"
 
+/* PPU 内存 */
+uint8_t ppu_spram[0x100];
+uint8_t ppu_ram[0x4000];
+
 struct _ppu {
     /* PPU 寄存器 */
     uint8_t ppuctrl;     // 2000: PPU 控制寄存器，WRITE
@@ -45,7 +49,7 @@ uint16_t ppu_base_nametable_address() {
 
 /* 第 2 位：端口 0x2007 VRAM 地址增量
  * 0: 自动增 1
- * 1: 自动增 32 
+ * 1: 自动增 32
  */
 uint8_t ppu_vram_address_increment() { return (ppu.ppuctrl | 0x04) ? 32 : 1; }
 
@@ -112,17 +116,17 @@ bool ppu_intensify_red() { return (ppu.ppumask | 0x20) ? 1 : 0; }
 bool ppu_intensify_green() { return (ppu.ppumask | 0x40) ? 1 : 0; }
 bool ppu_intensify_blue() { return (ppu.ppumask | 0x80) ? 1 : 0; }
 
-void ppu_set_render_grayscale(bool val) { 
+void ppu_set_render_grayscale(bool val) {
     if(val) { ppu.ppumask |= 0x01;  }
     else    { ppu.ppumask &= !0x01; }
 }
 
-void ppu_set_show_background_in_leftmost_8px(bool val) { 
+void ppu_set_show_background_in_leftmost_8px(bool val) {
     if(val) { ppu.ppumask |= 0x01;  }
     else    { ppu.ppumask &= !0x01; }
 }
 
-void ppu_set_show_sprites_in_leftmost_8px(bool val) { 
+void ppu_set_show_sprites_in_leftmost_8px(bool val) {
     if(val) { ppu.ppumask |= 0x01;  }
     else    { ppu.ppumask &= !0x01; }
 }
@@ -132,7 +136,7 @@ void ppu_set_show_background(bool val) {
     else    { ppu.ppumask &= !0x01; }
 }
 
-void ppu_set_show_sprites(bool val) { 
+void ppu_set_show_sprites(bool val) {
     if(val) { ppu.ppumask |= 0x01;  }
     else    { ppu.ppumask &= !0x01; }
 }
@@ -156,7 +160,7 @@ void ppu_set_intensify_blue(bool val) {
 
 /* 第 5 位：Sprite Overflow
  * 同一个 Scanline 上出现超过 8 个 Sprites，该位会置一
- */ 
+ */
 bool ppu_sprite_overflow() { return (ppu.ppustatus | 0x20) ? 1 : 0; }
 
 /* 第 6 位：Hit Flag
@@ -187,3 +191,73 @@ void ppu_set_in_vblank(bool val) {
     else    { ppu.ppustatus &= !0x80; }
 }
 
+/******** PPU 内存操作 ********/
+
+// 参考资料：http://wiki.nesdev.com/w/index.php/PPU_memory_map
+
+/* PPU 具有 16KB 的内存地址空间，地址范围为：0000~3FFF
+ * NES 内置了 2KB 的 PPU 内存，通常情况下映射到 2000~2FFF 中，但可以更改
+ *
+ * Memory Map
+ * 地址范围     | 大小   | 简介
+ * $0000-$0FFF | $1000 | Pattern table 0
+ * $1000-$1FFF | $1000 | Pattern Table 1
+ * $2000-$23FF | $0400 | Nametable 0
+ * $2400-$27FF | $0400 | Nametable 1
+ * $2800-$2BFF | $0400 | Nametable 2
+ * $2C00-$2FFF | $0400 | Nametable 3
+ * $3000-$3EFF | $0F00 | Mirrors of $2000-$2EFF
+ * $3F00-$3F1F | $0020 | Palette RAM indexes
+ * $3F20-$3FFF | $00E0 | Mirrors of $3F00-$3F1F
+ *
+ * 其中，$3F20-$3F1F 为调色板 (Palette) 内存索引，其作用如下：
+ * 地址         | 用途
+ * $3F00       | Universal background color
+ * $3F01-$3F03 | Background palette 0
+ * $3F05-$3F07 | Background palette 1
+ * $3F09-$3F0B | Background palette 2
+ * $3F0D-$3F0F | Background palette 3
+ * $3F11-$3F13 | Sprite palette 0
+ * $3F15-$3F17 | Sprite palette 1
+ * $3F19-$3F1B | Sprite palette 2
+ * $3F1D-$3F1F | Sprite palette 3
+ *
+ * 地址 $3F10/$3F14/$3F18/$3F1C 是地址 $3F00/$3F04/$3F08/$3F0C 的镜像
+ */
+
+
+/* 另外，PPU 还有 256 Byte 的 Object Attribute Memory (OAM)
+ * CPU 可通过 OAMADDR, OAMDATA, OAMDMA 对其进行操作
+ * OAM 决定了 Sprites 如何被渲染
+ *
+ * OAM Memory Map:
+ * 地址范围          | 大小 | 简介
+ * $00-$0C (0 of 4) | $40 | Sprite Y coordinate
+ * $01-$0D (1 of 4) | $40 | Sprite tile #
+ * $02-$0E (2 of 4) | $40 | Sprite attribute
+ * $03-$0F (3 of 4) | $40 | Sprite X coordinate
+ */
+
+
+uint16_t ppu_get_real_ram_address(uint16_t address) {
+    if(address < 0x3f00) { return address; }
+    else if(address < 0x4000) {
+        /* Palettes (调色板) 内存 */
+        address = 0x3f00 | (address & 0x1f); // 地址 $3F20-$3FFF 是地址 3F00-$3F1F 的镜像
+        if(address == 0x3f10 || address == 0x3f14 || address == 0x3f18 || address == 0x3f1c) {
+            // 地址 $3F10/$3F14/$3F18/$3F1C 是地址 $3F00/$3F04/$3F08/$3F0C 的镜像
+            return address - 0x10;
+        } else {
+            return address;
+        }
+    }
+    return 0xffff;  // 地址错误
+}
+
+uint8_t ppu_ram_read(uint16_t address) {
+    return ppu_ram[ppu_get_real_ram_address(address)];
+}
+
+void ppu_ram_write(uint16_t address, uint8_t data) {
+    ppu_ram[ppu_get_real_ram_address(address)] = data;
+}
