@@ -8,4 +8,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+
+uint8_t ppu_io_read(uint16_t address);
+void ppu_io_write(uint16_t address, uint8_t data);
+void ppu_sprram_write(uint8_t data);
+
 #endif //BEMU_PPU_H

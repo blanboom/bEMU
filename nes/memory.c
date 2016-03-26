@@ -63,6 +63,8 @@
 
 
 #include "memory.h"
+#include "cpu.h"
+#include "ppu.h"
 
 uint8_t *prg_rom_ptr;
 uint8_t *chr_rom_ptr;
@@ -81,8 +83,7 @@ uint8_t memory_read_byte(uint16_t address) {
         case 0:                        // 0000 ~ 1FFF, 内部 RAM
             return interal_ram[address % 0x0800];
         case 1:                        // 2000 ~ 3FFF, PPU 寄存器
-            // TODO: 尚未实现
-            return 0;
+            return ppu_io_read(address);
         case 2:                        // APU 与 IO 寄存器
             // TODO: 尚未实现
             return 0;
@@ -98,22 +99,33 @@ uint16_t memory_read_word(uint16_t address) {
 }
 
 void memory_write_byte(uint16_t address, uint8_t data) {
+    int i; uint16_t tmp;
+    /* DMA 传输 */
     if (address == 0x4014) {
-        // TODO: DMA 传输
+        for(i = 0; i < 256; i++) {
+            tmp = (0x100 * data) + i;
+            if((tmp >> 13) == 0) {
+                ppu_sprram_write(interal_ram[tmp % 0x0800]);
+            } else {
+                ppu_sprram_write(prg_rom_ptr[(address - 0x8000) % prg_rom_size]);
+            }
+        }
         return;
     }
 
     switch(address >> 13) {
         case 0:                        // 0000 ~ 1FFF, 内部 RAM
             interal_ram[address % 0x0800] = data;
+            break;
         case 1:                        // 2000 ~ 3FFF, PPU 寄存器
-            // TODO: 尚未实现
-            return;
+            ppu_io_write(address, data);
+            break;
         case 2:                        // APU 与 IO 寄存器
             // TODO: 尚未实现
-            return;
+            break;
         case 3:                        // Save RAM
             save_ram[address - 0x6000] = data;
+            break;
         default:                       // PRG ROM
             prg_rom_ptr[(address - 0x8000) % prg_rom_size] = data;
     }
