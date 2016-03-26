@@ -1,12 +1,22 @@
 /*
  * PPU 相关程序
+ * 参考了 https://github.com/NJUOS/LiteNES 中的代码
  */
 
 #include "ppu.h"
 
 /* PPU 内存 */
-uint8_t ppu_spram[0x100];
+uint8_t ppu_sprram[0x100];
 uint8_t ppu_ram[0x4000];
+
+/* 画面渲染相关 */
+/* For sprite-0-hit checks*/
+uint8_t ppu_screen_background[264][248];
+/* Precalculated tile high and low bytes addition for pattern tables */
+uint8_t ppu_l_h_addition_table[256][256][8];
+uint8_t ppu_l_h_addition_flip_table[256][256][8];
+
+bool ppu_sprite_hit_occured = false;
 
 struct _ppu {
     /* PPU 寄存器 */
@@ -22,7 +32,11 @@ struct _ppu {
     uint8_t oamdma;      // 4104: OAM DMA 寄存器（高字节），WRITE
 
     /* PPU 内存 */
-    // TODO: 尚未完成
+    // TODO: 记得初始化
+    uint8_t *spram;
+    uint8_t *ram;
+
+    int scanline;
 } ppu;
 
 /******** PPU 寄存器操作相关函数 ********/
@@ -260,4 +274,102 @@ uint8_t ppu_ram_read(uint16_t address) {
 
 void ppu_ram_write(uint16_t address, uint8_t data) {
     ppu_ram[ppu_get_real_ram_address(address)] = data;
+}
+
+/******** 图像渲染 ********/
+
+void ppu_draw_background_scanline(bool mirror) {
+    int tile_x;
+    for(tile_x = ppu_show_background_in_leftmost_8px() ? 0 : 1; tile_x < 32; tile_x++) {
+        /* 跳过屏幕外的像素 */
+        if(((tile_x << 3) - ppu.ppuscroll_x + (mirror ? 256 : 0)) > 256) continue;
+
+        /* 通过 tile 在屏幕上的位置，获取 tile 在内存中的地址 */
+        int tile_y = ppu.scanline >> 3;
+        int tile_index = ppu_ram_read(ppu_base_nametable_address() + tile_x + (tile_y << 5) + (mirror ? 0x400 : 0));
+        uint16_t tile_address = ppu_background_pattern_table_address() + 16 * tile_index;
+
+        /* */
+        int y_in_tile = ppu.scanline & 0x7;
+        uint8_t l = ppu_ram_read(tile_address + y_in_tile);
+        uint8_t h = ppu_ram_read(tile_address + y_in_tile + 8);
+
+        int x;
+        for(x = 0; x < 8; x++) {
+            uint8_t color = ppu_l_h_addition_table[l][h][x];
+
+            if(color != 0) {  // 颜色 0 为透明
+                uint16_t attribute_address = (ppu_base_nametable_address() + (mirror ? 0x400 : 0) + 0x3c0 + (tile_x >> 2) + (ppu.scanline >> 5) * 8);
+                bool top = (ppu.scanline % 32) < 16;
+                bool left = (tile_x % 32) < 16;
+
+                uint8_t palette_attribute = ppu_ram_read(attribute_address);
+
+                if(!top) { palette_attribute >>= 4; }
+                if(!left) { palette_attribute >>= 2;}
+                palette_attribute &= 3;
+
+                uint16_t palette_address = 0x3f00 + (palette_attribute << 2);
+                int idx = ppu_ram_read(palette_address + color);
+
+                ppu_screen_background[(tile_x << 3) + x][ppu.scanline] = color;
+
+                // TODO: 添加到一个供显示用的缓冲区
+                add_pixels_to_display_buffer();
+            }
+        }
+    }
+}
+
+void ppu_draw_sprite_scanline() {
+    int scanline_sprite_count = 0;
+    int n;
+    for(n = 0; n < 0x100; n += 4) {
+        uint8_t sprite_x = ppu_sprram[n + 3];
+        uint8_t sprite_y = ppu_sprram[n];
+
+        /* 跳过不在 Scanline 上的 Sprite */
+        if(sprite_y > ppu.scanline || sprite_y + ppu_sprite_height() < ppu.scanline) { continue; }
+
+        scanline_sprite_count++;
+
+        /* 每行不能出现超过 8 个 Sprites */
+        if(scanline_sprite_count > 8) { ppu_set_sprite_overflow(true); }
+
+        bool vflip = ppu_sprram[n + 2] & 0x80;
+        bool hflip = ppu_sprram[n + 2] & 0x40;
+
+        uint16_t tile_address = ppu_sprite_pattern_table_address() + 16 * ppu_sprram[n + 1];
+        int y_in_tile = ppu.scanline & 0x7;
+        uint8_t l = ppu_ram_read(tile_address + (vflip ? (7 - y_in_tile) : y_in_tile));
+        uint8_t h = ppu_ram_read(tile_address + (vflip ? (7 - y_in_tile) : y_in_tile) + 8);
+
+        uint8_t palette_attribute = ppu_sprram[n + 2] & 0x3;
+        uint16_t palette_address = 0x3f10 + (palette_attribute << 2);
+        int x;
+        for(x = 0; x < 8; x++) {
+            int color = hflip ? ppu_l_h_addition_flip_table[l][h][x] : ppu_l_h_addition_table[l][h][x];
+
+            /* color 0 为透明 */
+            if(color != 0) {
+                int screen_x = sprite_x + x;
+                int idx = ppu_ram_read(palette_address + color);
+
+                // http://wiki.nesdev.com/w/index.php/PPU_sprite_priority
+                if(ppu_sprram[n + 2] & 0x20) { // 位于背景之后
+                    // TODO: 添加到显示缓冲区
+                    add_pixels_to_display_buffer();
+                } else {                       // 位于背景之前
+                    // TODO: 添加到显示缓冲区
+                    add_pixels_to_display_buffer();
+                }
+
+                /* 检查是否发生 sprite 0 hit, 并更新寄存器 */
+                if(ppu_show_background() && !ppu_sprite_hit_occured && n == 0 && ppu_screen_background[screen_x][sprite_y + y_in_tile] == color) {
+                    ppu_set_sprite_0_hit(true);
+                    ppu_sprite_hit_occured = true;
+                }
+            }
+        }
+    }
 }
