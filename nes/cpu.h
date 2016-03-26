@@ -7,4 +7,7 @@
 
 #include <stdint.h>
 
+void cpu_interrupt();
+uint64_t cpu_clock();
+
 #endif //BEMU_CPU_H
