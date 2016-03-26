@@ -5,6 +5,7 @@
 #include "cpu.h"
 #include "memory.h"
 
+uint64_t cpu_cycles;
 
 /* 用于获得 CPU 状态寄存器中的指定状态, 具体内容见后面的注释 */
 #define FLAG_CARRY     0x01
@@ -43,6 +44,7 @@ struct _cpu {
 /* 初始化 CPU */
 void cpu_init() {
     // http://wiki.nesdev.com/w/index.php/CPU_power_up_state
+    cpu_cycles = 0;
     uint16_t i;
     cpu.a  = 0;
     cpu.x  = 0;
@@ -496,10 +498,15 @@ void cpu_txs() { cpu.sp = cpu.x; }
 
 /****************************************************************************************/
 
+uint64_t cpu_clock() {
+    return cpu_cycles;
+}
+
 /* CPU 运行指定 Cycle */
 
 void cpu_run(int cycles) {
     uint8_t opcode;
+    int tmp = cycles;
     while(cycles > 0) {
         opcode = memory_read_byte(cpu.pc++);
         switch(opcode) {
@@ -768,6 +775,7 @@ void cpu_run(int cycles) {
         }
         cycles -= additional_cycles;
     }
+    cpu_cycles += tmp - cycles;
 }
 
 void cpu_interrupt() {

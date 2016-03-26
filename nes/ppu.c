@@ -4,6 +4,8 @@
  */
 
 #include "ppu.h"
+#include "cpu.h"
+#include <string.h>
 
 /* PPU 内存 */
 uint8_t ppu_sprram[0x100];
@@ -17,6 +19,9 @@ uint8_t ppu_l_h_addition_table[256][256][8];
 uint8_t ppu_l_h_addition_flip_table[256][256][8];
 
 bool ppu_sprite_hit_occured = false;
+uint8_t ppu_latch;
+bool ppu_2007_first_read;
+uint8_t ppu_addr_latch;
 
 struct _ppu {
     /* PPU 寄存器 */
@@ -31,12 +36,13 @@ struct _ppu {
     uint16_t ppudata;     // 2007: PPU 数据寄存器，READ/WRITE
     uint8_t oamdma;      // 4104: OAM DMA 寄存器（高字节），WRITE
 
-    /* PPU 内存 */
-    // TODO: 记得初始化
-    uint8_t *spram;
-    uint8_t *ram;
+    bool scroll_received_x;
+    bool addr_received_high_byte;
+    bool ready;
 
-    int scanline;
+    int mirroring, mirroring_xor;
+
+    int x, scanline;
 } ppu;
 
 /******** PPU 寄存器操作相关函数 ********/
@@ -315,7 +321,7 @@ void ppu_draw_background_scanline(bool mirror) {
                 ppu_screen_background[(tile_x << 3) + x][ppu.scanline] = color;
 
                 // TODO: 添加到一个供显示用的缓冲区
-                add_pixels_to_display_buffer();
+                add_pixels_to_display_buffer(idx);
             }
         }
     }
@@ -358,10 +364,10 @@ void ppu_draw_sprite_scanline() {
                 // http://wiki.nesdev.com/w/index.php/PPU_sprite_priority
                 if(ppu_sprram[n + 2] & 0x20) { // 位于背景之后
                     // TODO: 添加到显示缓冲区
-                    add_pixels_to_display_buffer();
+                    add_pixels_to_display_buffer(idx);
                 } else {                       // 位于背景之前
                     // TODO: 添加到显示缓冲区
-                    add_pixels_to_display_buffer();
+                    add_pixels_to_display_buffer(idx);
                 }
 
                 /* 检查是否发生 sprite 0 hit, 并更新寄存器 */
@@ -372,4 +378,137 @@ void ppu_draw_sprite_scanline() {
             }
         }
     }
+}
+
+
+/******** PPU Lifecycle ********/
+
+void ppu_cycle() {
+    if(!ppu.ready && cpu_clock() > 29658) { ppu.ready = true; }
+    ppu.scanline++;
+    if(ppu_show_background()) {
+        ppu_draw_background_scanline(false);
+        ppu_draw_background_scanline(true);
+    }
+    if(ppu_show_sprites()) { ppu_draw_sprite_scanline(); }
+    if(ppu.scanline == 241) {
+        ppu_set_in_vblank(true);
+        ppu_set_sprite_0_hit(false);
+        cpu_interrupt();
+    } else if(ppu.scanline == 262) {
+        ppu.scanline = -1;
+        ppu_sprite_hit_occured = false;
+        ppu_set_in_vblank(false);
+        /* 一帧画面扫描结束，刷新屏幕 */
+        update_screen();
+    }
+}
+
+void ppu_run(int cycles) {
+    while(cycles-- > 0) {
+        ppu_cycle();
+    }
+}
+
+void ppu_copy(uint16_t address, uint8_t *source, int length) {
+    memcpy(&ppu_ram[address], source, length);
+}
+
+uint8_t ppu_io_read(uint16_t address) {
+    uint8_t data; uint16_t value;
+    ppu.ppuaddr &= 0x3fff;
+    switch(address & 7) {
+        case 2:
+            value = ppu.ppustatus;
+            ppu_set_in_vblank(false);
+            ppu_set_sprite_0_hit(false);
+            ppu.scroll_received_x = 0;
+            ppu.ppuscroll = 0;
+            ppu.addr_received_high_byte = 0;
+            ppu_latch = value;
+            ppu_addr_latch = 0;
+            ppu_2007_first_read = true;
+            return value;
+        case 4:
+            return ppu_latch = ppu_sprram[ppu.oamaddr];
+        case 7:
+            if(ppu.ppuaddr < 0x3f00) {
+                data = ppu_ram_read(ppu.ppuaddr);
+                ppu_latch = 0;
+            } else {
+                data = ppu_ram_read(ppu.ppuaddr);
+                ppu_latch = 0;
+            }
+            if(ppu_2007_first_read) {
+                ppu_2007_first_read = false;
+            } else {
+                ppu.ppuaddr += ppu_vram_address_increment();
+            }
+            return data;
+        default:
+            return 0xff;
+    }
+}
+
+void ppu_io_write(uint16_t address, uint8_t data) {
+    address &= 7;
+    ppu_latch = data;
+    ppu.ppuaddr &= 0x3fff;
+    switch(address) {
+        case 0: if(ppu.ready) { ppu.ppuctrl = data; } break;
+        case 1: if(ppu.ready) { ppu.ppumask = data; } break;
+        case 3: ppu.oamaddr = data; break;
+        case 4: ppu_sprram[ppu.oamaddr++] = data; break;
+        case 5:
+            if(ppu.scroll_received_x) { ppu.ppuscroll_y = data; }
+            else { ppu.ppuscroll_x = data; }
+            ppu.scroll_received_x ^= 1;
+            break;
+        case 6:
+            if(!ppu.ready) { return; }
+            if(ppu.addr_received_high_byte) { ppu.ppuaddr = (ppu_addr_latch << 8) + data; }
+            else { ppu_addr_latch = data; }
+            ppu.addr_received_high_byte ^= 1;
+            ppu_2007_first_read = true;
+            break;
+        case 7:
+            if(ppu.ppuaddr > 0x1fff || ppu.ppuaddr < 0x4000) {
+                ppu_ram_write(ppu.ppuaddr ^ ppu.mirroring_xor, data);
+                ppu_ram_write(ppu.ppuaddr, data);
+            } else {
+                ppu_ram_write(ppu.ppuaddr, data);
+            }
+    }
+    ppu_latch = data;
+}
+
+void ppu_init() {
+    ppu.ppuctrl = 0; ppu.ppumask = 0; ppu.ppustatus = 0; ppu.oamaddr = 0;
+    ppu.ppuscroll = 0; ppu.ppuscroll_x = 0; ppu.ppuscroll_y = 0; ppu.ppuaddr = 0;
+    ppu.ppustatus |= 0xa0;
+    ppu.ppudata = 0;
+    ppu_2007_first_read = 0;
+
+    int l, h, x;
+    for(h = 0; h < 0x100; h++) {
+        for(l = 0; l < 0x100; l++) {
+            for(x = 0; x < 8; x++) {
+                ppu_l_h_addition_table[l][h][x] = (((h >> (7 - x)) & 1) << 1) | ((l >> (7 - x)) & 1);
+                ppu_l_h_addition_flip_table[l][h][x] = (((h >> x) & 1) << 1) | ((l >> x) & 1);
+            }
+        }
+    }
+}
+
+void ppu_sprram_write(uint8_t data) {
+    ppu_sprram[ppu.oamaddr++] = data;
+}
+
+void ppu_set_background_color(uint8_t color) {
+    // TODO
+}
+
+void ppu_set_mirroring(uint8_t mirroring) {
+    ppu.mirroring = mirroring;
+    ppu.mirroring_xor = 0x400 << mirroring;
 }
