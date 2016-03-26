@@ -7,6 +7,13 @@
 #include "cpu.h"
 #include <string.h>
 
+/* 像素缓冲区，存储 PPU 最终生成的图像，供外部调用
+ * bg:  背景
+ * bbg: 背景后的 Sprites
+ * fg:  背景前的 Sprites
+ */
+PixelBuf bg, bbg, fg;
+
 /* PPU 内存 */
 uint8_t ppu_sprram[0x100];
 uint8_t ppu_ram[0x4000];
@@ -44,6 +51,15 @@ struct _ppu {
 
     int x, scanline;
 } ppu;
+
+/******** PixelBuf 操作相关函数 ********/
+void pixelbuf_clean(PixelBuf pbuf) { pbuf.size = 0; }
+void pixelbuf_add(PixelBuf pbuf, int x, int y, int color) {
+    pbuf.buf[pbuf.size].x = x;
+    pbuf.buf[pbuf.size].y = y;
+    pbuf.buf[pbuf.size].color = color;
+}
+
 
 /******** PPU 寄存器操作相关函数 ********/
 // 参考资料：https://yq.aliyun.com/articles/5775
@@ -320,8 +336,7 @@ void ppu_draw_background_scanline(bool mirror) {
 
                 ppu_screen_background[(tile_x << 3) + x][ppu.scanline] = color;
 
-                // TODO: 添加到一个供显示用的缓冲区
-                add_pixels_to_display_buffer(idx);
+                pixelbuf_add(bg, (tile_x << 3) + x - ppu.ppuscroll_x + (mirror ? 256 : 0), ppu.scanline + 1, idx);
             }
         }
     }
@@ -363,11 +378,9 @@ void ppu_draw_sprite_scanline() {
 
                 // http://wiki.nesdev.com/w/index.php/PPU_sprite_priority
                 if(ppu_sprram[n + 2] & 0x20) { // 位于背景之后
-                    // TODO: 添加到显示缓冲区
-                    add_pixels_to_display_buffer(idx);
+                    pixelbuf_add(bbg, screen_x, sprite_y + y_in_tile + 1, idx);
                 } else {                       // 位于背景之前
-                    // TODO: 添加到显示缓冲区
-                    add_pixels_to_display_buffer(idx);
+                    pixelbuf_add(fg, screen_x, sprite_y + y_in_tile + 1, idx);
                 }
 
                 /* 检查是否发生 sprite 0 hit, 并更新寄存器 */
