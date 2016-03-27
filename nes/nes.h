@@ -3,9 +3,14 @@
 
 #include <stdint.h>
 
-/**
- * 存储游戏 ROM 中的信息
- */
+/* 错误代码 */
+#define ERR_FILE_NOT_EXIST              (-1)
+#define ERR_NES_FILE_HEADER_READ_FAILED (-2)
+#define ERR_MEMORY_ALLOCATE_FAILED      (-3)
+#define ERR_PRG_ROM_LOAD_FAILED         (-4)
+#define ERR_CHR_ROM_LOAD_FAILED         (-5)
+
+/* 存储游戏 ROM 中的信息 */
 struct _cartridge {
     /**
      * NES ROM 的 header
@@ -33,5 +38,9 @@ struct _cartridge {
 };
 
 extern struct _cartridge cartridge;
+
+int nes_load_rom(char *rom);
+void nes_print_rom_metadata();
+void nes_exit();
 
 #endif
