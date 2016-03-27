@@ -519,6 +519,7 @@ void ppu_sprram_write(uint8_t data) {
 
 void ppu_set_background_color(uint8_t color) {
     // TODO
+    set_bg_color();
 }
 
 void ppu_set_mirroring(uint8_t mirroring) {

@@ -1,6 +1,9 @@
 #include "nes.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "cpu.h"
+#include "ppu.h"
+#include "memory.h"
 
 struct _cartridge cartridge;
 
@@ -63,4 +66,10 @@ void nes_exit() {
     free(cartridge.chr_rom);
     cartridge.prg_rom = NULL;
     cartridge.chr_rom = NULL;
+}
+
+void nes_init() {
+    memory_init(cartridge.prg_rom, cartridge.prg_rom_size);
+    cpu_init();
+    ppu_init();
 }

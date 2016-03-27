@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 
+void cpu_init();
 void cpu_interrupt();
 uint64_t cpu_clock();
 

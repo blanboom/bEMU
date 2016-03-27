@@ -24,6 +24,7 @@ typedef struct PixelBuf PixelBuf;
 
 extern PixelBuf bg, bbg, fg;  // 背景，背景后的 Sprite，背景前的 Sprite
 
+void ppu_init();
 uint8_t ppu_io_read(uint16_t address);
 void ppu_io_write(uint16_t address, uint8_t data);
 void ppu_sprram_write(uint8_t data);

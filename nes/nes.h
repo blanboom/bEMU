@@ -42,5 +42,6 @@ extern struct _cartridge cartridge;
 int nes_load_rom(char *rom);
 void nes_print_rom_metadata();
 void nes_exit();
+void nes_init();
 
 #endif
