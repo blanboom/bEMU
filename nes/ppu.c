@@ -5,6 +5,7 @@
 
 #include "ppu.h"
 #include "cpu.h"
+#include "emulator.h"
 #include <string.h>
 
 /* 像素缓冲区，存储 PPU 最终生成的图像，供外部调用
@@ -413,7 +414,7 @@ void ppu_cycle() {
         ppu_sprite_hit_occured = false;
         ppu_set_in_vblank(false);
         /* 一帧画面扫描结束，刷新屏幕 */
-        update_screen();
+        emu_update_screen();
     }
 }
 
@@ -519,7 +520,7 @@ void ppu_sprram_write(uint8_t data) {
 
 void ppu_set_background_color(uint8_t color) {
     // TODO
-    set_bg_color();
+    set_bg_color(color);
 }
 
 void ppu_set_mirroring(uint8_t mirroring) {
