@@ -30,6 +30,12 @@ void ppu_io_write(uint16_t address, uint8_t data);
 void ppu_sprram_write(uint8_t data);
 void ppu_set_mirroring(uint8_t mirroring);
 void ppu_copy(uint16_t address, uint8_t *source, int length);
+void ppu_run(int cycles);
+uint8_t ppu_ram_read(uint16_t address);
+bool ppu_show_background();
+bool ppu_show_sprites();
+void pixelbuf_clean(PixelBuf pbuf);
+void pixelbuf_add(PixelBuf pbuf, int x, int y, int color);
 
 typedef struct _rgb {
 	int r;

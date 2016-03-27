@@ -2,6 +2,14 @@
 #define NES_H
 
 #include <stdint.h>
+#include "ppu.h"
+#include "cpu.h"
+#include "memory.h"
+
+/* 画面信息 */
+#define FPS 60
+#define SCREEN_WIDTH 256
+#define SCREEN_HEIGHT 240
 
 /* 错误代码 */
 #define ERR_FILE_NOT_EXIST              (-1)

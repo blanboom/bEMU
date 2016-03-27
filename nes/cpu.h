@@ -10,5 +10,6 @@
 void cpu_init();
 void cpu_interrupt();
 uint64_t cpu_clock();
+void cpu_run(int cycles);
 
 #endif //BEMU_CPU_H

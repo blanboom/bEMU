@@ -1,9 +1,6 @@
 #include "nes.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "cpu.h"
-#include "ppu.h"
-#include "memory.h"
 
 struct _cartridge cartridge;
 
