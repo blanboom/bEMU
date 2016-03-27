@@ -18,7 +18,7 @@ struct _cartridge {
      * 0-3 字节: 固定值, $4E $45 $53 $1A (前三字节即为 "NES")
      * 4: PRG ROM 大小, 单位为 16KB 的倍数
      * 5: CHR ROM 大小, 单位为 8KB 的倍数, 0 代表 8KB
-     * 6: Flag s
+     * 6: Flag 6
      * 7: Flag 7
      * 8: PRG RAM 大小, 单位为 8KB 的倍数, 0 代表 8KB
      * 9: Flag 9

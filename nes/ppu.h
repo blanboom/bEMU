@@ -28,6 +28,7 @@ void ppu_init();
 uint8_t ppu_io_read(uint16_t address);
 void ppu_io_write(uint16_t address, uint8_t data);
 void ppu_sprram_write(uint8_t data);
+void ppu_set_mirroring(uint8_t mirroring);
 
 typedef struct _rgb {
 	int r;

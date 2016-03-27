@@ -70,6 +70,7 @@ void nes_exit() {
 
 void nes_init() {
     memory_init(cartridge.prg_rom, cartridge.prg_rom_size);
-    cpu_init();
     ppu_init();
+    ppu_set_mirroring(cartridge.header[6] & 1);
+    cpu_init();
 }
