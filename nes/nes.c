@@ -70,6 +70,10 @@ void nes_exit() {
 
 void nes_init() {
     memory_init(cartridge.prg_rom, cartridge.prg_rom_size);
+
+    /* 将 CHR ROM 装入 PPU 内存 */
+    ppu_copy(0x0000, cartridge.chr_rom, 0x2000);
+
     ppu_init();
     ppu_set_mirroring(cartridge.header[6] & 1);
     cpu_init();
