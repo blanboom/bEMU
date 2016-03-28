@@ -34,8 +34,24 @@ void ppu_run(int cycles);
 uint8_t ppu_ram_read(uint16_t address);
 bool ppu_show_background();
 bool ppu_show_sprites();
-void pixelbuf_clean(PixelBuf pbuf);
-void pixelbuf_add(PixelBuf pbuf, int x, int y, int color);
+
+
+/* 清除 Pixel 缓冲区 */
+#define pixelbuf_clean(bf) \
+	do { \
+		(bf).size = 0; \
+	} while(0)
+
+/* 在 Pixel 缓冲区添加新像素 */
+#define pixelbuf_add(bf, xa, ya, ca) \
+	do { \
+		if ((xa) < SCREEN_WIDTH && (ya) < SCREEN_HEIGHT) { \
+			(bf).buf[(bf).size].x = (xa); \
+			(bf).buf[(bf).size].y = (ya); \
+			(bf).buf[(bf).size].color = (ca); \
+			(bf).size++; \
+		} \
+	} while(0)
 
 typedef struct _rgb {
 	int r;

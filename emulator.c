@@ -42,7 +42,7 @@ void flush_buf(PixelBuf *buf) {
     }
 }
 
-void emulator_init() {
+void emu_init() {
     nes_init();
 
     al_init();

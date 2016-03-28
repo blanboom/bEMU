@@ -5,6 +5,7 @@
 
 #include "ppu.h"
 #include "cpu.h"
+#include "nes.h"
 #include "emulator.h"
 #include <string.h>
 
@@ -52,14 +53,6 @@ struct _ppu {
 
     int x, scanline;
 } ppu;
-
-/******** PixelBuf 操作相关函数 ********/
-void pixelbuf_clean(PixelBuf pbuf) { pbuf.size = 0; }
-void pixelbuf_add(PixelBuf pbuf, int x, int y, int color) {
-    pbuf.buf[pbuf.size].x = x;
-    pbuf.buf[pbuf.size].y = y;
-    pbuf.buf[pbuf.size].color = color;
-}
 
 
 /******** PPU 寄存器操作相关函数 ********/
@@ -303,7 +296,7 @@ void ppu_ram_write(uint16_t address, uint8_t data) {
 
 void ppu_draw_background_scanline(bool mirror) {
     int tile_x;
-    for(tile_x = ppu_show_background_in_leftmost_8px() ? 0 : 1; tile_x < 32; tile_x++) {
+    for(tile_x = (ppu_show_background_in_leftmost_8px() ? 0 : 1); tile_x < 32; tile_x++) {
         /* 跳过屏幕外的像素 */
         if(((tile_x << 3) - ppu.ppuscroll_x + (mirror ? 256 : 0)) > 256) continue;
 
