@@ -65,6 +65,7 @@
 #include "memory.h"
 #include "cpu.h"
 #include "ppu.h"
+#include "io.h"
 
 uint8_t *prg_rom_ptr;
 uint8_t *chr_rom_ptr;
@@ -85,8 +86,7 @@ uint8_t memory_read_byte(uint16_t address) {
         case 1:                        // 2000 ~ 3FFF, PPU 寄存器
             return ppu_io_read(address);
         case 2:                        // APU 与 IO 寄存器
-            // TODO: 尚未实现
-            return 0;
+            return io_read(address);
         case 3:                        // Save RAM
             return save_ram[address - 0x6000];
         default:                       // PRG ROM
@@ -121,7 +121,7 @@ void memory_write_byte(uint16_t address, uint8_t data) {
             ppu_io_write(address, data);
             break;
         case 2:                        // APU 与 IO 寄存器
-            // TODO: 尚未实现
+            io_write(address, data);
             break;
         case 3:                        // Save RAM
             save_ram[address - 0x6000] = data;
