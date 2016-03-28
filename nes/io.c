@@ -3,11 +3,12 @@
 //
 
 #include "io.h"
+#include "emulator.h"
 
-static byte prev_write;
+static uint8_t prev_write;
 static int p = 10;
 
-byte io_read(uint16_t address) {
+uint8_t io_read(uint16_t address) {
     // Joystick 1
     if (address == 0x4016) {
         if (p++ < 9) {
