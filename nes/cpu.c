@@ -350,7 +350,7 @@ void cpu_adc() {
     uint16_t tmp;
     tmp = op_value + cpu.a + ((cpu.p & FLAG_CARRY) ? 1 : 0);
     cpu_modify_flag(FLAG_CARRY, tmp & 0xff00);
-    cpu_modify_flag(FLAG_OVERFLOW, ((cpu.a ^ op_value) & (cpu.a ^ tmp)) & 0x80);
+    cpu_modify_flag(FLAG_OVERFLOW, ((op_value ^ tmp) & (cpu.a ^ tmp)) & 0x80);
     cpu.a = (uint8_t)(tmp & 0xff);
     cpu_checknz(cpu.a);
 }
