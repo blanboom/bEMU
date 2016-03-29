@@ -659,7 +659,7 @@ void cpu_run(int cycles) {
             case 0xBD: cpu_addressing_absolute_x();  cpu_lda();  cycles -= 4; break;
             case 0xBE: cpu_addressing_absolute_y();  cpu_ldx();  cycles -= 4; break;
             case 0xC0: cpu_addressing_immediate();   cpu_cpy();  cycles -= 2; break;
-            case 0xC1: cpu_addressing_indirect();    cpu_cmp();  cycles -= 6; break;
+            case 0xC1: cpu_addressing_indirect_x();  cpu_cmp();  cycles -= 6; break;
             case 0xC4: cpu_addressing_zeropage();    cpu_cpy();  cycles -= 3; break;
             case 0xC5: cpu_addressing_zeropage();    cpu_cmp();  cycles -= 3; break;
             case 0xC6: cpu_addressing_zeropage();    cpu_dec();  cycles -= 5; break;
