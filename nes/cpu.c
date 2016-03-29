@@ -590,6 +590,7 @@ void cpu_run(int cycles) {
             case 0x54: cpu_addressing_zeropage_x();  cpu_nop();  cycles -= 1; break;
             case 0x55: cpu_addressing_zeropage_x();  cpu_eor();  cycles -= 4; break;
             case 0x56: cpu_addressing_zeropage_x();  cpu_lsr();  cycles -= 6; break;
+            case 0x59: cpu_addressing_absolute_y();  cpu_eor();  cycles -= 4; break;
             case 0x5A: cpu_addressing_accumulator(); cpu_nop();  cycles -= 1; break;
             case 0x5C: cpu_addressing_absolute_x();  cpu_nop();  cycles -= 1; break;
             case 0x5D: cpu_addressing_absolute_x();  cpu_eor();  cycles -= 4; break;
@@ -614,8 +615,8 @@ void cpu_run(int cycles) {
             case 0x79: cpu_addressing_absolute_y();  cpu_adc();  cycles -= 4; break;
             case 0x7A: cpu_addressing_accumulator(); cpu_nop();  cycles -= 1; break;
             case 0x7C: cpu_addressing_absolute_x();  cpu_nop();  cycles -= 1; break;
-            case 0x7D: cpu_addressing_absolute();    cpu_adc();  cycles -= 4; break;
-            case 0x7E: cpu_addressing_absolute();    cpu_ror();  cycles -= 7; break;
+            case 0x7D: cpu_addressing_absolute_x();    cpu_adc();  cycles -= 4; break;
+            case 0x7E: cpu_addressing_absolute_x();    cpu_ror();  cycles -= 7; break;
             case 0x80: cpu_addressing_immediate();   cpu_nop();  cycles -= 1; break;
             case 0x81: cpu_addressing_indirect_x();  cpu_sta();  cycles -= 6; break;
             case 0x84: cpu_addressing_zeropage();    cpu_sty();  cycles -= 3; break;
@@ -632,7 +633,7 @@ void cpu_run(int cycles) {
             case 0x95: cpu_addressing_zeropage_x();  cpu_sta();  cycles -= 4; break;
             case 0x96: cpu_addressing_zeropage_y();  cpu_stx();  cycles -= 4; break;
             case 0x98: cpu_addressing_implied();     cpu_tya();  cycles -= 2; break;
-            case 0x99: cpu_addressing_absolute();    cpu_sta();  cycles -= 5; break;
+            case 0x99: cpu_addressing_absolute_y();    cpu_sta();  cycles -= 5; break;
             case 0x9A: cpu_addressing_implied();     cpu_txs();  cycles -= 2; break;
             case 0x9D: cpu_addressing_absolute_x();  cpu_sta();  cycles -= 5; break;
             case 0xA0: cpu_addressing_immediate();   cpu_ldy();  cycles -= 2; break;
@@ -700,6 +701,8 @@ void cpu_run(int cycles) {
             case 0xF9: cpu_addressing_absolute_y();  cpu_sbc();  cycles -= 4; break;
             case 0xFA: cpu_addressing_accumulator(); cpu_nop();  cycles -= 1; break;
             case 0xFC: cpu_addressing_absolute_x();  cpu_nop();  cycles -= 1; break;
+            case 0xFD: cpu_addressing_absolute_x();  cpu_sbc();  cycles -= 4; break;
+            case 0xFE: cpu_addressing_absolute_x();  cpu_inc();  cycles -= 7; break;
             default:
                 break;
         }
