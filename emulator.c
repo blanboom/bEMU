@@ -108,7 +108,7 @@ void emu_run() {
 
 void emu_update_screen()
 {
-    int idx = ppu_ram_read(0x3F00);
+    int idx = ppu_ram_read(0x3f00);
     set_bg_color(idx);
 
     if (ppu_show_sprites())

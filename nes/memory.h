@@ -7,6 +7,9 @@
 
 #include <stdint.h>
 
+// TODO: 仅用于调试
+extern int prg_rom_size;
+
 void memory_init(uint8_t *prg_rom, int prg_rom_length);
 uint8_t memory_read_byte(uint16_t address);
 uint16_t memory_read_word(uint16_t address);

@@ -4,6 +4,7 @@
 #include "nes/disassembler.h"
 #include "nes/nes.h"
 #include "emulator.h"
+#include "stdio.h"
 
 int main(int argc, char *argv[]) {
     int tmp;
@@ -16,7 +17,7 @@ int main(int argc, char *argv[]) {
     }
 
     /* 显示 NES ROM 的相关信息 */
-    nes_print_rom_metadata();
+    //nes_print_rom_metadata();
 
     /* 反汇编 */
     //disasm(cartridge.prg_rom, cartridge.prg_rom_size);

@@ -6,6 +6,8 @@
 #include "memory.h"
 #include "disassembler.h"
 #include "nes.h"
+#include "ppu.h"
+#include <stdio.h>
 
 uint64_t cpu_cycles;
 
@@ -51,7 +53,7 @@ void cpu_init() {
     cpu.a  = 0;
     cpu.x  = 0;
     cpu.y  = 0;
-    cpu.p  = 0x34;
+    cpu.p  = 0x24;
     cpu.sp = 0xfd;
     memory_write_byte(0x4017, 0); // frame irq enabled
     memory_write_byte(0x4015, 0); // all channels disabled
@@ -73,14 +75,14 @@ void cpu_reset() {
 /* 检查并设置 Zero Flag 与 Negative Flag */
 void cpu_checknz(uint8_t n)
 {
-    if((n >> 7) & 1) { cpu.p |= FLAG_NEGATIVE; } else { cpu.p &= !FLAG_NEGATIVE; }
-    if(n == 0)       { cpu.p |= FLAG_ZERO; }     else { cpu.p &= !FLAG_ZERO; }
+    if((n >> 7) & 1) { cpu.p |= FLAG_NEGATIVE; } else { cpu.p &= ~FLAG_NEGATIVE; }
+    if(n == 0)       { cpu.p |= FLAG_ZERO; }     else { cpu.p &= ~FLAG_ZERO; }
 }
 
 /* 修改 Flags */
 void cpu_modify_flag(uint8_t flag, int value) {
     if(value) { cpu.p |= flag; }
-    else      { cpu.p &= !flag; }
+    else      { cpu.p &= ~flag; }
 }
 
 /* 栈操作 */
@@ -298,7 +300,7 @@ void cpu_asla() {
 }
 
 void cpu_rol() {
-    uint8_t tmp = cpu.p | FLAG_CARRY;
+    uint8_t tmp = cpu.p & FLAG_CARRY;
     cpu_modify_flag(FLAG_CARRY, op_value & 0x80);
     op_value <<= 1;
     op_value |= tmp ? 1 : 0;
@@ -307,7 +309,7 @@ void cpu_rol() {
 }
 
 void cpu_rola() {
-    uint8_t tmp = cpu.p | FLAG_CARRY;
+    uint8_t tmp = cpu.p & FLAG_CARRY;
     cpu_modify_flag(FLAG_CARRY, cpu.a & 0x80);
     cpu.a <<= 1;
     cpu.a |= tmp ? 1 : 0;
@@ -315,7 +317,7 @@ void cpu_rola() {
 }
 
 void cpu_ror() {
-    uint8_t tmp = cpu.p | FLAG_CARRY;
+    uint8_t tmp = cpu.p & FLAG_CARRY;
     cpu_modify_flag(FLAG_CARRY, op_value & 0x01);
     op_value >>= 1;
     op_value |= (tmp ? 1 : 0) << 7;
@@ -324,7 +326,7 @@ void cpu_ror() {
 }
 
 void cpu_rora() {
-    uint8_t tmp = cpu.p | FLAG_CARRY;
+    uint8_t tmp = cpu.p & FLAG_CARRY;
     cpu_modify_flag(FLAG_CARRY, cpu.a & 0x01);
     cpu.a >>= 1;
     cpu.a |= (tmp ? 1 : 0) << 7;
@@ -346,7 +348,7 @@ void cpu_lsra() {
 
 void cpu_adc() {
     uint16_t tmp;
-    tmp = op_value + cpu.a + ((cpu.p | FLAG_CARRY) ? 1 : 0);
+    tmp = op_value + cpu.a + ((cpu.p & FLAG_CARRY) ? 1 : 0);
     cpu_modify_flag(FLAG_CARRY, tmp & 0xff00);
     cpu_modify_flag(FLAG_OVERFLOW, ((cpu.a ^ op_value) & (cpu.a ^ tmp)) & 0x80);
     cpu.a = (uint8_t)(tmp & 0xff);
@@ -355,7 +357,7 @@ void cpu_adc() {
 
 void cpu_sbc() {
     uint16_t tmp;
-    tmp = cpu.a - op_value - (1 - ((cpu.p | FLAG_CARRY) ? 1 : 0));
+    tmp = cpu.a - op_value - (1 - ((cpu.p & FLAG_CARRY) ? 1 : 0));
     cpu_modify_flag(FLAG_CARRY, (tmp & 0xff00) == 0);
     cpu_modify_flag(FLAG_OVERFLOW, ((cpu.a ^ op_value) & (cpu.a ^ tmp)) & 0x80);
     cpu.a = (uint8_t)(tmp & 0xff);
@@ -364,15 +366,15 @@ void cpu_sbc() {
 
 /* Branching ******/
 
-void cpu_bmi() { if(cpu.p | FLAG_NEGATIVE) { cpu.pc = op_address; }}
-void cpu_bcs() { if(cpu.p | FLAG_CARRY) { cpu.pc = op_address; }}
-void cpu_beq() { if(cpu.p | FLAG_ZERO) { cpu.pc = op_address; }}
-void cpu_bvs() { if(cpu.p | FLAG_OVERFLOW) { cpu.pc = op_address; }}
+void cpu_bmi() { if(cpu.p & FLAG_NEGATIVE) { cpu.pc = op_address; }}
+void cpu_bcs() { if(cpu.p & FLAG_CARRY) { cpu.pc = op_address; }}
+void cpu_beq() { if(cpu.p & FLAG_ZERO) { cpu.pc = op_address; }}
+void cpu_bvs() { if(cpu.p & FLAG_OVERFLOW) { cpu.pc = op_address; }}
 
-void cpu_bpl() { if(!(cpu.p | FLAG_NEGATIVE)) { cpu.pc = op_address; }}
-void cpu_bcc() { if(!(cpu.p | FLAG_CARRY)) { cpu.pc = op_address; }}
-void cpu_bne() { if(!(cpu.p | FLAG_ZERO)) { cpu.pc = op_address; }}
-void cpu_bvc() { if(!(cpu.p | FLAG_OVERFLOW)) { cpu.pc = op_address; }}
+void cpu_bpl() { if(!(cpu.p & FLAG_NEGATIVE)) { cpu.pc = op_address; }}
+void cpu_bcc() { if(!(cpu.p & FLAG_CARRY)) { cpu.pc = op_address; }}
+void cpu_bne() { if(!(cpu.p & FLAG_ZERO)) { cpu.pc = op_address; }}
+void cpu_bvc() { if(!(cpu.p & FLAG_OVERFLOW)) { cpu.pc = op_address; }}
 
 /* Comapre ******/
 
@@ -395,7 +397,7 @@ void cpu_cpx() {
 }
 
 void cpu_cpy() {
-    int tmpc = cpu.x - op_value;
+    int tmpc = cpu.y - op_value;
     cpu_modify_flag(FLAG_CARRY, tmpc >= 0);
     cpu_checknz((uint8_t)tmpc);
 }
@@ -512,9 +514,17 @@ void cpu_run(int cycles) {
     while(cycles > 0) {
         // TODO: 仅供调试使用
         //printf("PC: %x\t", cpu.pc);
-        //disasm_once(cartridge.prg_rom, cpu.pc - 0x8000);
+        ///
 
-        opcode = memory_read_byte(cpu.pc++);
+        opcode = memory_read_byte(cpu.pc);
+
+        // TODO: 供调试使用
+        //printf("%x\t", opcode);
+        //disasm_once(cartridge.prg_rom, (cpu.pc - 0x8000) % prg_rom_size);
+        ///
+
+        cpu.pc++;
+
         switch(opcode) {
             /* STEP 1: 根据寻址方式取出操作数
              * STEP 2: 执行对应指令
@@ -699,8 +709,10 @@ void cpu_run(int cycles) {
 }
 
 void cpu_interrupt() {
-    cpu.p |= FLAG_INTERRUPT;
-    cpu_stack_push_word(cpu.pc);
-    cpu_stack_push_byte(cpu.p);
-    cpu.pc = 0xfffa;
+    if(ppu_generate_nmi()) {
+        cpu.p |= FLAG_INTERRUPT;
+        cpu_stack_push_word(cpu.pc);
+        cpu_stack_push_byte(cpu.p);
+        cpu.pc = memory_read_word(0xfffa);
+    }
 }

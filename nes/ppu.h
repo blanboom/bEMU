@@ -34,6 +34,7 @@ void ppu_run(int cycles);
 uint8_t ppu_ram_read(uint16_t address);
 bool ppu_show_background();
 bool ppu_show_sprites();
+bool ppu_generate_nmi();
 
 
 /* 清除 Pixel 缓冲区 */
