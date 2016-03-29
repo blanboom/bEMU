@@ -381,7 +381,7 @@ void cpu_bvc() { if(!(cpu.p & FLAG_OVERFLOW)) { cpu.pc = op_address; }}
 void cpu_bit() {
     cpu_modify_flag(FLAG_OVERFLOW, op_value & 0x40);
     cpu_modify_flag(FLAG_NEGATIVE, op_value & 0x80);
-    cpu_modify_flag(FLAG_ZERO, op_value & cpu.a);
+    cpu_modify_flag(FLAG_ZERO, !(op_value & cpu.a));
 }
 
 void cpu_cmp() {
