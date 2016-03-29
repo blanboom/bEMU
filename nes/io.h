@@ -1,7 +1,3 @@
-//
-// Created by Blanboom on 16/3/28.
-//
-
 #ifndef BEMU_IO_H
 #define BEMU_IO_H
 

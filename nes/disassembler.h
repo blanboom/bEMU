@@ -1,7 +1,3 @@
-//
-// Created by Blanboom on 16/1/12.
-//
-
 #ifndef BEMU_DISASSEMBLER_H
 #define BEMU_DISASSEMBLER_H
 

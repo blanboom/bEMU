@@ -1,3 +1,8 @@
+/* 使用 Allegro 显示画面, 获取键盘输入
+ * 
+ * 通过修改本文件, 可以将该模拟器移植到其他平台
+ */
+
 #include "emulator.h"
 #include "nes/nes.h"
 #include <allegro5/allegro.h>

@@ -1,3 +1,6 @@
+/* NES 内存操作
+ */
+
 /* NES Memory Map
  * http://wiki.nesdev.com/w/index.php/CPU_memory_map
  *
@@ -63,7 +66,6 @@
 
 
 #include "memory.h"
-#include "cpu.h"
 #include "ppu.h"
 #include "io.h"
 

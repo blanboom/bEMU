@@ -1,3 +1,11 @@
+/* bEMU: Blanboom's NES Emulator
+ *
+ * 本项目是一个基本的 NES 模拟器, 具有以下功能:
+ *   1. 运行部分 NES 软件
+ *   2. 反汇编
+ *   3. 在运行过程中可显示 CPU 和 PPU 寄存器中信息
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <allegro5/allegro.h>

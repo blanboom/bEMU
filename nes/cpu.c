@@ -1,13 +1,9 @@
-//
-// Created by Blanboom on 16/1/12.
-//
+/* 6502 CPU
+ */
 
 #include "cpu.h"
 #include "memory.h"
-#include "disassembler.h"
 #include "nes.h"
-#include "ppu.h"
-#include <stdio.h>
 
 uint64_t cpu_cycles;
 
@@ -194,7 +190,7 @@ void cpu_addressing_absolute_x() {
  * 使用寄存器 Y 的直接变址寻址. 16 位地址做为基地址, 与寄存器 Y 的内容相加
  */
 void cpu_addressing_absolute_y() {
-    op_address = memory_read_word(cpu.pc) + cpu.y;
+    op_address = (memory_read_word(cpu.pc) + cpu.y) & 0xffff;
     op_value = memory_read_byte(op_address);
     cpu.pc += 2;
     if ((op_address >> 8) != (cpu.pc >> 8)) {
@@ -485,20 +481,7 @@ void cpu_tya() { cpu.a = cpu.y; cpu_checknz(cpu.a); }
 void cpu_tsx() { cpu.x = cpu.sp; cpu_checknz(cpu.x); }
 void cpu_txs() { cpu.sp = cpu.x; }
 
-/* Undocumented ******/
-
-/****
- * TODO: 尚未实现
- * void cpu_lax() {
- *     cpu.a = op_value;
- *     cpu.x = op_value;
- *     cpu_checknz(cpu.a);
- * }
- *
- * void cpu_sax() {
- *    memory_write_byte(op_address, cpu.a & cpu.x);
-}
-*****/
+/* Undocumented Opcodes: 未实现 ******/
 
 /****************************************************************************************/
 
@@ -512,16 +495,16 @@ void cpu_run(int cycles) {
     uint8_t opcode;
     int tmp = cycles;
     while(cycles > 0) {
-        // TODO: 仅供调试使用
-        //printf("PC: %x\t", cpu.pc);
-        ///
+        // 仅供调试时使用
+        // printf("PC: %x\t", cpu.pc);
+        //////
 
         opcode = memory_read_byte(cpu.pc);
 
-        // TODO: 供调试使用
-        //printf("%x\t", opcode);
-        //disasm_once(cartridge.prg_rom, (cpu.pc - 0x8000) % prg_rom_size);
-        ///
+        // 仅供调试时使用
+        // printf("%x\t", opcode);
+        // disasm_once(cartridge.prg_rom, (cpu.pc - 0x8000) % prg_rom_size);
+        //////
 
         cpu.pc++;
 

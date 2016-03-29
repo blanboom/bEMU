@@ -1,5 +1,5 @@
-#ifndef EMULATOR_H
-#define EMULATOR_H
+#ifndef BEMU_EMULATOR_H
+#define BEMU_EMULATOR_H
 
 
 void emu_init();

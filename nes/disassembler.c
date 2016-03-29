@@ -1,6 +1,5 @@
-//
-// Created by Blanboom on 16/1/12.
-//
+/* 反汇编器
+ */
 
 #include "disassembler.h"
 #include <stdio.h>

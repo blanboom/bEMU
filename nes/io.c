@@ -1,6 +1,5 @@
-//
-// Created by Blanboom on 16/3/28.
-//
+/* NES IO 读写
+ */
 
 #include "io.h"
 #include "emulator.h"

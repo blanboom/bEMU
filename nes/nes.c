@@ -1,3 +1,6 @@
+/* 提供装在 NES ROM, NES 初始化, NES 运行等程序
+ */
+
 #include "nes.h"
 #include <stdio.h>
 #include <stdlib.h>

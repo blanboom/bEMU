@@ -1,6 +1,6 @@
-/*
- * PPU 相关程序
- * 参考了 https://github.com/NJUOS/LiteNES 中的代码
+/* PPU: 图像处理单元
+ *
+ * 本文件中的程序主要参考了 https://github.com/NJUOS/LiteNES 中的代码
  */
 
 #include "ppu.h"
@@ -391,7 +391,8 @@ void ppu_draw_sprite_scanline() {
 /******** PPU Lifecycle ********/
 
 void ppu_cycle() {
-    // TODO: 换回 if(!ppu.ready && cpu_clock() > 29658) { ppu.ready = true; }
+    // 这样更符合实际情况: if(!ppu.ready && cpu_clock() > 29658) { ppu.ready = true; }
+    // http://wiki.nesdev.com/w/index.php/PPU_power_up_state
     if(!ppu.ready && cpu_clock() > 1) { ppu.ready = true; }
     ppu.scanline++;
     if(ppu_show_background()) {
