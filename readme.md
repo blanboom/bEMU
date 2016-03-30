@@ -32,7 +32,9 @@ bEMU -r rom_file.nes
 
 **1\. 安装 Allegro**
 
-本程序使用 Allegro 进行图像的显示、以及按键信息的获取。在编译之前，首先需要安装 Allegro. OS X 下可使用 Homebrew 安装:
+本程序使用 Allegro 进行图像的显示、以及按键信息的获取。在编译之前，首先需要安装 Allegro. 
+
+在 OS X 操作系统下，可使用 Homebrew 安装:
 
 ```
 brew install allegro
