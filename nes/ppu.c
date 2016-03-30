@@ -68,7 +68,7 @@ void ppu_debugger() {
     printf("PPUADDR:   %x\n", ppu.ppuaddr);
     printf("PPUDATA:   %x\n", ppu.ppudata);
     printf("\n");
-    printf("PPU SCANLINE: %x", ppu.scanline);
+    printf("PPU SCANLINE: %x\n\n", ppu.scanline);
 }
 
 
