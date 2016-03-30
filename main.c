@@ -12,13 +12,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
 #include <allegro5/allegro.h>
 #include "nes/disassembler.h"
 #include "nes/nes.h"
 #include "emulator.h"
 #include "stdio.h"
+#include "time.h"
 
 void arg_error(char *app_name);
+static void sig_info();
 
 int main(int argc, char *argv[]) {
     /* 判断 Arguments 的数量是否正确 */
@@ -38,7 +41,9 @@ int main(int argc, char *argv[]) {
     switch(c) {
         case 'r':  // 运行
             emu_init();
+            signal(SIGINFO, sig_info);
             emu_run();
+            nes_exit(); // 其实这一句永远不会执行
             break;
         case 'd':  // 反汇编
             disasm(cartridge.prg_rom, cartridge.prg_rom_size);
@@ -50,8 +55,6 @@ int main(int argc, char *argv[]) {
             arg_error(strrchr(argv[0], '/') + 1);
     }
 
-    // TODO: 如果收到 SIGINT，也应该执行 nes_exit()
-    nes_exit();
     return 0;
 }
 
@@ -66,4 +69,18 @@ void arg_error(char *app_name) {
     printf("While NES emulator is running, press Ctrl + T to show debug information.\n\n");
     printf("https://github.com/blanboom/bEMU\nhttp://blanboom.org\n");
     exit(0);
+}
+
+/* 显示调试信息 */
+static void sig_info() {
+    /* 显示时间 */
+    static time_t timer;
+    static struct tm * timeinfo;
+    time(&timer);
+    timeinfo = localtime(&timer);
+    printf("%s\n", asctime(timeinfo));
+
+    cpu_debugger();
+    ppu_debugger();
+    printf("--------------------------------------------\n\n");
 }
