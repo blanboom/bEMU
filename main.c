@@ -17,15 +17,14 @@
 #include "nes/disassembler.h"
 #include "nes/nes.h"
 #include "emulator.h"
-#include "stdio.h"
-#include "time.h"
+#include <time.h>
 
 void arg_error(char *app_name);
 static void sig_info();
 
 int main(int argc, char *argv[]) {
     /* 判断 Arguments 的数量是否正确 */
-    if(argc != 3) { arg_error(strrchr(argv[0], '/') + 1); }
+    if(argc != 3) { arg_error(argv[0]); }
 
     /* 读入 NES ROM */
     int tmp;
@@ -52,7 +51,7 @@ int main(int argc, char *argv[]) {
             nes_print_rom_metadata();
             break;
         default:
-            arg_error(strrchr(argv[0], '/') + 1);
+            arg_error(argv[0]);
     }
 
     return 0;
