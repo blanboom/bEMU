@@ -32,6 +32,8 @@ bool ppu_show_background();
 bool ppu_show_sprites();
 bool ppu_generate_nmi();
 
+void ppu_debugger();
+
 
 /* 清除 Pixel 缓冲区 */
 #define pixelbuf_clean(bf) \

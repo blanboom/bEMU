@@ -4,6 +4,7 @@
 #include "cpu.h"
 #include "memory.h"
 #include "nes.h"
+#include "stdio.h"
 
 uint64_t cpu_cycles;
 
@@ -40,6 +41,19 @@ struct _cpu {
     uint8_t  p;    // 状态寄存器 Status Register
     uint16_t pc;   // 程序计数器 Program Counter
 } cpu;
+
+/* 显示 CPU 寄存器, 时钟等信息 */
+void cpu_debugger() {
+    printf("CPU REGISTERS:\n");
+    printf("A:   %x\n", cpu.a);
+    printf("X:   %x\n", cpu.x);
+    printf("Y:   %x\n", cpu.y);
+    printf("SP:  %x\n", cpu.sp);
+    printf("P:   %x\n", cpu.p);
+    printf("PC:  %x\n", cpu.pc);
+    printf("\n");
+    printf("CPU CLOCK: %llu\n\n", cpu_clock());
+}
 
 /* 初始化 CPU */
 void cpu_init() {

@@ -8,6 +8,7 @@
 #include "nes.h"
 #include "emulator.h"
 #include <string.h>
+#include "stdio.h"
 
 /* 像素缓冲区，存储 PPU 最终生成的图像，供外部调用
  * bg:  背景
@@ -53,6 +54,22 @@ struct _ppu {
 
     int x, scanline;
 } ppu;
+
+/* 显示 PPU 寄存器等信息 */
+void ppu_debugger() {
+    printf("PPU REGISTERS:\n");
+    printf("PPUCTRL:   %x\n", ppu.ppuctrl);
+    printf("PPUMASK:   %x\n", ppu.ppumask);
+    printf("PPUSTATUS: %x\n", ppu.ppustatus);
+    printf("OAMADDR:   %x\n", ppu.oamaddr);
+    printf("OAMDATA:   %x\n", ppu.oamdata);
+    printf("PPUSCROLL: %x\n", ppu.ppuscroll);
+    printf(" (X: %x, Y: %x)\n", ppu.ppuscroll_x, ppu.ppuscroll_y);
+    printf("PPUADDR:   %x\n", ppu.ppuaddr);
+    printf("PPUDATA:   %x\n", ppu.ppudata);
+    printf("\n");
+    printf("PPU SCANLINE: %x", ppu.scanline);
+}
 
 
 /******** PPU 寄存器操作相关函数 ********/
