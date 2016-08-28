@@ -72,6 +72,7 @@ void arg_error(char *app_name) {
 
 /* 显示调试信息 */
 static void sig_info() {
+    // TODO: 此处使用了不安全的函数，需要进行进一步修改
     /* 显示时间 */
     static time_t timer;
     static struct tm * timeinfo;
