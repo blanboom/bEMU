@@ -1,5 +1,7 @@
 # bEMU: Blanboom's NES/Famicom Emulator
 
+详细介绍：[https://blanboom.org/2016/nes-emulator/](https://blanboom.org/2016/nes-emulator/)
+
 这是一个具有基本功能的 NES 模拟器，能够运行部分 NES 软件和游戏。
 
 完成本程序仅仅是为了加深自己对计算机底层工作原理的理解。如果需要一个稳定、兼容性强的 NES 模拟器，建议参考其他项目。
@@ -36,7 +38,7 @@ bEMU -r rom_file.nes
 
 本程序使用 Allegro 进行图像的显示、以及按键信息的获取。在编译之前，首先需要安装 Allegro. 
 
-在 OS X 操作系统下，可使用 Homebrew 安装:
+在 macOS 操作系统下，可使用 Homebrew 安装:
 
 ```
 brew install allegro
